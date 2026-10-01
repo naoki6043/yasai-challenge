@@ -540,13 +540,55 @@ function notice(){
 }
 function settings(){app.innerHTML=head('せってい','秋冬版 v7')+`<div class=card><b>${profile.grade}年生・${bandName[profile.band]}</b><p>学年を変えると、学ぶ内容と確認クイズが切り替わります。</p><button class=secondary onclick="changeGrade()">学年を選び直す</button></div>`}
 function changeGrade(){if(confirm('学年を選び直しますか？ 行動記録は残ります。')){profile=null;localStorage.removeItem(PREFIX+'profile');page='setup';render()}}
-function go(p){page=p;render();scrollTo(0,0)}
-let n=[
-  ['home','⌂','ホーム'],
-  ['learn','📖','まなぶ'],
-  ['record','▣','きろく'],
-  ['notice','🔔','お知らせ'],
-  ['settings','⚙','設定']
-];nav.innerHTML=n.map(x=>`<button class="${page===x[0]?'active':''}" onclick="go('${x[0]}')"><b>${x[1]}</b>${x[2]}</button>`).join('')}
-function render(){let f={setup,home,recipe,learn,lesson,quizChoice,pooledQuiz,quizResult,record,notice,settings}[page]||home;f();navRender()}
+function go(p){
+  page=p;
+  render();
+  scrollTo(0,0);
+}
+
+function navRender(){
+
+  if(page==='setup'){
+    nav.innerHTML='';
+    return;
+  }
+
+  let n=[
+    ['home','⌂','ホーム'],
+    ['learn','📖','まなぶ'],
+    ['record','▣','きろく'],
+    ['notice','🔔','お知らせ'],
+    ['settings','⚙','設定']
+  ];
+
+  nav.innerHTML=n.map(x=>
+    `<button
+      class="${page===x[0]?'active':''}"
+      onclick="go('${x[0]}')">
+      <b>${x[1]}</b>
+      ${x[2]}
+    </button>`
+  ).join('');
+}
+
+function render(){
+
+  let f={
+    setup,
+    home,
+    recipe,
+    learn,
+    lesson,
+    quizChoice,
+    pooledQuiz,
+    quizResult,
+    record,
+    notice,
+    settings
+  }[page]||home;
+
+  f();
+  navRender();
+}
+
 loadPublishedRecipes().finally(()=>render());
