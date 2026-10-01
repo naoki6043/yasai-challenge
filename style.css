@@ -1,0 +1,36 @@
+
+*{box-sizing:border-box}body{margin:0;background:#faf9f5;color:#263127;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
+#app{max-width:620px;margin:auto;padding:18px 15px 100px}button{font:inherit}.top{display:flex;justify-content:space-between;align-items:center;margin:4px 0 15px}.brand{font-size:23px;font-weight:800}.sub,.note{font-size:12px;color:#6c756d;margin-top:4px}
+.card{background:#fff;border:1px solid #e4e5df;border-radius:18px;padding:15px;margin:12px 0}.hero{background:#f0f4ec;border-radius:20px;padding:17px;margin-bottom:14px}.hero b{font-size:21px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stats .card{text-align:center;padding:12px 4px}.stats b{display:block;font-size:22px}
+.primary{border:0;border-radius:14px;padding:14px 16px;background:#557a46;color:#fff;font-weight:800;width:100%}.secondary{border:1px solid #d9dfd5;background:#fff;border-radius:14px;padding:13px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.veg{border:1px solid #e0e4dc;background:#fff;border-radius:17px;padding:12px;text-align:left;min-height:112px}.veg .emoji{font-size:32px}.veg b{display:block;margin:5px 0}.badge{display:inline-block;background:#eef3ea;border-radius:20px;padding:4px 8px;font-size:11px}
+.recipes{display:grid;gap:10px}.recipe{border:1px solid #e1e4de;background:#fff;border-radius:16px;padding:14px;text-align:left}.recipe b{display:block}.recipe small{color:#6b746c}
+.progress{height:10px;background:#e4e8e0;border-radius:10px;overflow:hidden;margin:9px 0}.progress i{display:block;height:100%;background:#557a46}.unlock{background:#fff6df;border:1px solid #ead7a6;border-radius:16px;padding:13px}.locked{opacity:.62}.lesson h3{font-size:19px}.lessonBox{background:#f5f6f1;border-radius:15px;padding:14px;margin:12px 0}.lessonBox strong{display:block;margin-bottom:5px}.choice{display:grid;gap:9px}.choice button{border:1px solid #dce1d8;background:#fff;border-radius:14px;padding:13px;text-align:left}
+.gradegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.gradegrid button{border:1px solid #dce1d8;background:#fff;border-radius:15px;padding:16px}.gradegrid b{font-size:20px}
+.back{border:0;background:none;color:#557a46;font-weight:800;padding:8px 0}.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.actions button{border:0;border-radius:14px;padding:14px;font-weight:800}.made{background:#edf4ea;color:#365a2c}.ate{background:#fff0d6;color:#745414}
+#nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:center;z-index:5}#nav button{width:20%;max-width:124px;border:0;background:#fff;padding:9px 2px 13px;font-size:10px;color:#6b736c}#nav button b{display:block;font-size:18px}#nav .active{color:#557a46;font-weight:800}
+.timeline{border-left:3px solid #dde5d8;margin-left:8px;padding-left:15px}.stage{margin:0 0 16px}.stage b{display:block}.open{color:#315c2b}.closed{color:#858b85}.research{white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:10px;background:#f5f5f2;padding:10px;border-radius:10px;overflow:auto}
+@media(max-width:360px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}}
+
+.homeRows{display:grid;gap:16px}
+.homeRow{background:#fff;border:1px solid #e4e5df;border-radius:18px;padding:13px}
+.vegTitle{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.vegTitle span{font-size:25px}.vegTitle b{font-size:18px}.vegTitle small{margin-left:auto;color:#557a46;font-size:10px}
+.threeRecipes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.homeRecipe{border:0;background:#f7f7f3;border-radius:13px;padding:7px;text-align:left;min-width:0}
+.homeRecipe b{display:block;font-size:12px;line-height:1.35;margin-top:6px;overflow-wrap:anywhere}
+.photoPlaceholder{height:72px;border-radius:10px;background:#eef2e9;display:flex;align-items:center;justify-content:center;font-size:29px}
+@media(max-width:390px){.homeRow{padding:10px}.threeRecipes{gap:5px}.homeRecipe{padding:5px}.homeRecipe b{font-size:10.5px}.photoPlaceholder{height:62px}}
+.checks{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}.check{font-size:11px;padding:4px 6px;border-radius:999px;background:#f1f3f5;color:#6b7280}.check.on{background:#e8f6ee;color:#176b3a;font-weight:700}.quizPrompt{border:2px solid #9bd5ee;background:#f4fbff}.doneBox{padding:14px;border-radius:14px;background:#eef8f1;font-weight:700}
+
+
+/* v7 記録カレンダー */
+.calendarCard{background:#fff;border:1px solid #e4e5df;border-radius:18px;padding:12px;margin:10px 0}
+.calHead{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;text-align:center;margin-bottom:8px}.calHead button{border:0;background:#f2f5ef;border-radius:12px;font-size:25px;height:38px;color:#46683b}.calHead b{font-size:18px}
+.calWeek,.calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calWeek span{text-align:center;font-size:11px;color:#7b837c;padding:4px 0}.calCell{min-width:0;height:54px;border:0;background:#f8f8f5;border-radius:10px;padding:5px 2px;text-align:center;color:#354036}.calCell.empty{background:transparent}.calCell b{display:block;font-size:12px}.calCell span{display:block;font-size:11px;line-height:1.25;letter-spacing:-2px;margin-top:3px}.calCell.active{background:#eef6e9;box-shadow:inset 0 0 0 1px #cfe0c6}.calLegend{display:flex;gap:9px;flex-wrap:wrap;font-size:10px;color:#657066;margin-top:10px}.dayDetail ul{padding-left:20px;margin-bottom:0}.dayDetail li{margin:7px 0}
+.monthStats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.monthStats .card{text-align:center;padding:11px 3px;margin:0}.monthStats b{display:block;font-size:21px}.monthStats span{display:block;font-size:9.5px;color:#6c756d;margin-top:3px}.history{list-style:none;padding:0;margin:0}.history li{padding:8px 0;border-bottom:1px solid #eceee9;font-size:13px}.history li:last-child{border:0}.history span{display:inline-block;width:42px;color:#778078;font-size:11px}
+@media(max-width:390px){.calCell{height:49px}.calCell span{font-size:9px}.monthStats{gap:4px}.monthStats b{font-size:18px}.monthStats span{font-size:8.5px}}
+
+.recipePhoto{width:100%;height:72px;object-fit:cover;object-position:center 43%;border-radius:10px;display:block}
+.detailRecipePhoto{width:100%;max-height:360px;object-fit:cover;object-position:center 43%;border-radius:14px;display:block}
+@media(max-width:390px){.recipePhoto{height:62px}}
