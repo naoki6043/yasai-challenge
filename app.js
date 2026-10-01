@@ -473,9 +473,6 @@ function startPooledQuiz(m){
   render();
 }
 
-  page='pooledQuiz';
-  render();
-}
 function pooledQuiz(){
 
   const z=quizQuestions[quizIndex];
