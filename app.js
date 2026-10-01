@@ -6,24 +6,27 @@ let profile=get('profile',null), events=get('events',[]), learnDone=get('learnDo
 let page=profile?'home':'setup', vegSel=null, recipeSel=null, lessonSel=null, quizIndex=0, quizScore=0, quizQuestions=[], quizOpportunity=null;
 let calendarCursor=new Date();
 const recipeImages={'小松菜お浸し':'images/recipe_01.jpeg'};
-let remoteRecipes=[]; let remoteLoaded=false;
+
+let remoteRecipes=[];
+let remoteLessons=[];
+let remoteQuizzes=[];
+let remoteNotices=[];
+let remoteLoaded=false;
 function loadPublishedRecipes(){
   return new Promise((resolve)=>{
     if(!window.RECIPE_API_URL || window.RECIPE_API_URL.includes('ここに')){
-      console.warn('レシピAPI URLが設定されていません');
+      console.warn('API URLが設定されていません');
       resolve();
       return;
     }
 
-    const callbackName='recipeCallback_'+Date.now();
-
+    const callbackName='contentCallback_'+Date.now();
     const script=document.createElement('script');
-
     const separator=window.RECIPE_API_URL.includes('?')?'&':'?';
 
     const timeout=setTimeout(()=>{
       cleanup();
-      console.warn('レシピAPIの読み込みがタイムアウトしました');
+      console.warn('APIの読み込みがタイムアウトしました');
       resolve();
     },10000);
 
@@ -42,16 +45,36 @@ function loadPublishedRecipes(){
     }
 
     window[callbackName]=function(data){
-      if(data && data.ok===true && Array.isArray(data.recipes)){
-        remoteRecipes=data.recipes;
+
+      if(data && data.ok===true){
+
+        remoteRecipes=
+          Array.isArray(data.recipes) ? data.recipes : [];
+
+        remoteLessons=
+          Array.isArray(data.lessons) ? data.lessons : [];
+
+        remoteQuizzes=
+          Array.isArray(data.quizzes) ? data.quizzes : [];
+
+        remoteNotices=
+          Array.isArray(data.notices) ? data.notices : [];
+
         remoteLoaded=true;
 
         console.log(
-          '公開レシピを取得しました：',
-          remoteRecipes.length+'件'
+          '公開データ取得：',
+          'レシピ '+remoteRecipes.length+'件',
+          '学習 '+remoteLessons.length+'件',
+          'クイズ '+remoteQuizzes.length+'件',
+          'お知らせ '+remoteNotices.length+'件'
         );
+
       }else{
-        console.warn('レシピAPIの応答形式が正しくありません',data);
+        console.warn(
+          'APIの応答形式が正しくありません',
+          data
+        );
       }
 
       cleanup();
@@ -59,7 +82,7 @@ function loadPublishedRecipes(){
     };
 
     script.onerror=function(){
-      console.warn('レシピAPIへの接続に失敗しました');
+      console.warn('APIへの接続に失敗しました');
       cleanup();
       resolve();
     };
