@@ -121,27 +121,32 @@ function sheetLessonsForBand(band){
       ].filter(x=>String(x||'').trim()!=='');
 
       const quiz=remoteQuizzes
-        .filter(q=>String(q['lesson_id']||'').trim()===lessonId)
-        .map(q=>{
-          const choices=[
-            q['選択肢1'],
-            q['選択肢2'],
-            q['選択肢3'],
-            q['選択肢4']
-          ].filter(x=>String(x||'').trim()!=='');
+  .filter(q=>String(q['lesson_id']||'').trim()===lessonId)
+  .map(q=>{
+    const choices=[
+      q['選択肢1'],
+      q['選択肢2'],
+      q['選択肢3'],
+      q['選択肢4']
+    ].filter(x=>String(x||'').trim()!=='');
 
-          const answer=Math.max(
-            0,
-            (Number(q['正解'])||1)-1
-          );
+    const answer=Math.max(
+      0,
+      (Number(q['正解'])||1)-1
+    );
 
-          return [
-            q['問題文']||'',
-            choices,
-            answer,
-            q['正解時解説']||''
-          ];
-        });
+    return {
+      question_id:String(q['question_id']||'').trim(),
+      lesson_id:lessonId,
+      text:q['問題文']||'',
+      choices:choices,
+      answer:answer,
+      correctExplanation:q['正解時解説']||'',
+      incorrectExplanation:q['不正解時解説']||'',
+      content_version:q['content_version']||'',
+      updated:q['更新日']||''
+    };
+  });
 
       return {
         lesson_id:lessonId,
@@ -398,33 +403,43 @@ function quizChoice(){
      </div>`;
 }
 function startPooledQuiz(m){
-  const bank=lessonBank();
 
-  // 実際に完了している学習だけを対象にする
+  const bank=lessonBank();
   const completed=completedLessonIndices();
 
-  let pool=[];
+  let candidates=[];
 
   completed.forEach(i=>{
+
     const L=bank[i];
 
-    if(!L || !Array.isArray(L.quiz)){
+    if(!L || !Array.isArray(L.quiz) || L.quiz.length===0){
       return;
     }
 
-    L.quiz.forEach((q,j)=>{
-      pool.push({
-        q:q,
-        stage:i,
-        item:j,
-        lesson_id:L.lesson_id||'',
-        content_version:L.content_version||''
-      });
+    // この学習に登録されている問題から1問選ぶ
+    const selected=
+      L.quiz[Math.floor(Math.random()*L.quiz.length)];
+
+    candidates.push({
+      q:selected,
+      stage:i,
+      lesson_id:L.lesson_id||'',
+      lesson_title:L.title||'',
+      lesson_version:L.content_version||''
     });
+
   });
 
-  // 最大4問
-  quizQuestions=pool.slice(0,4);
+  // 学習が5・6個の場合でも、1回のクイズは最大4問
+  // どの学習を採用するかをランダム化
+  for(let i=candidates.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [candidates[i],candidates[j]]=
+      [candidates[j],candidates[i]];
+  }
+
+  quizQuestions=candidates.slice(0,4);
 
   quizIndex=0;
   quizScore=0;
@@ -432,13 +447,23 @@ function startPooledQuiz(m){
 
   log('learning_quiz_start',{
     milestone:m,
-    eligible_items:pool.length,
-    total:quizQuestions.length
+    completed_lessons:completed.length,
+    candidate_lessons:candidates.length,
+    total:quizQuestions.length,
+
+    question_ids:quizQuestions.map(z=>
+      z.q.question_id||''
+    ),
+
+    lesson_ids:quizQuestions.map(z=>
+      z.lesson_id||''
+    )
   });
 
-  // 問題が1問もない場合
   if(quizQuestions.length===0){
+
     alert('現在、挑戦できるクイズはありません。');
+
     page='learn';
     render();
     return;
@@ -447,8 +472,120 @@ function startPooledQuiz(m){
   page='pooledQuiz';
   render();
 }
-function pooledQuiz(){let z=quizQuestions[quizIndex],q=z.q;app.innerHTML=`<button class=back onclick="abandonQuiz()">‹ あとでやる</button>${head('確認クイズ',`${quizIndex+1} / ${quizQuestions.length}`)}<div class=card><p class=note>これまでに学んだ内容から出題しています。</p><h2>${q[0]}</h2><div class=choice>${q[1].map((x,i)=>`<button onclick="pooledAns(${i})">${x}</button>`).join('')}</div></div>`}
-function pooledAns(i){let z=quizQuestions[quizIndex],q=z.q,ok=i===q[2];if(ok)quizScore++;log('learning_quiz_answer',{milestone:quizOpportunity,stage:z.stage+1,item:z.item+1,correct:ok});app.innerHTML=`${head('答え合わせ','確認クイズ')}<div class=card><h2>${ok?'○ よくできました':'学んだところを確認しよう'}</h2><div class=lessonBox><strong>学んだ内容</strong><p>${q[3]}</p></div><button class=primary onclick="nextPooledQ()">${quizIndex+1<quizQuestions.length?'次の問題':'結果を見る'}</button></div>`}
+
+  page='pooledQuiz';
+  render();
+}
+function pooledQuiz(){
+
+  const z=quizQuestions[quizIndex];
+  const q=z.q;
+
+  app.innerHTML=
+    `<button class=back onclick="abandonQuiz()">
+       ‹ あとでやる
+     </button>`+
+    head(
+      '確認クイズ',
+      `${quizIndex+1} / ${quizQuestions.length}`
+    )+
+    `<div class=card>
+
+       <p class=note>
+         これまでに学んだ内容から出題しています。
+       </p>
+
+       <h2>${q.text}</h2>
+
+       <div class=choice>
+         ${q.choices.map((x,i)=>
+           `<button onclick="pooledAns(${i})">
+              ${x}
+            </button>`
+         ).join('')}
+       </div>
+
+     </div>`;
+}
+function pooledAns(i){
+
+  const z=quizQuestions[quizIndex];
+  const q=z.q;
+
+  const ok=i===q.answer;
+
+  if(ok){
+    quizScore++;
+  }
+
+  log('learning_quiz_answer',{
+
+    milestone:quizOpportunity,
+
+    stage:z.stage+1,
+
+    lesson_id:z.lesson_id||'',
+
+    question_id:q.question_id||'',
+
+    content_version:q.content_version||'',
+
+    selected_answer:i+1,
+
+    correct_answer:q.answer+1,
+
+    correct:ok
+
+  });
+
+  const explanation=
+    ok
+      ? q.correctExplanation
+      : (
+          q.incorrectExplanation ||
+          q.correctExplanation
+        );
+
+  app.innerHTML=
+    head(
+      '答え合わせ',
+      '確認クイズ'
+    )+
+    `<div class=card>
+
+       <h2>
+         ${ok
+           ? '○ よくできました'
+           : '学んだところを確認しよう'
+         }
+       </h2>
+
+       <div class=lessonBox>
+
+         <strong>
+           ${ok
+             ? '確認しよう'
+             : 'もう一度見てみよう'
+           }
+         </strong>
+
+         <p>${explanation}</p>
+
+       </div>
+
+       <button
+         class=primary
+         onclick="nextPooledQ()">
+
+         ${quizIndex+1<quizQuestions.length
+           ? '次の問題'
+           : '結果を見る'
+         }
+
+       </button>
+
+     </div>`;
+}
 function nextPooledQ(){quizIndex++;if(quizIndex<quizQuestions.length){page='pooledQuiz';render()}else{let key=profile.band+'-m'+quizOpportunity;if(!quizDone.includes(key))quizDone.push(key);save('quizDone',quizDone);log('learning_quiz_complete',{milestone:quizOpportunity,score:quizScore,total:quizQuestions.length,accuracy:quizQuestions.length?quizScore/quizQuestions.length:null});page='quizResult';render()}}
 function abandonQuiz(){log('learning_quiz_abandon',{milestone:quizOpportunity,answered:quizIndex,total:quizQuestions.length});page='learn';render()}
 function quizResult(){app.innerHTML=head('クイズ完了',`これまでの学びを確認しました`)+`<div class=hero><b>${quizScore} / ${quizQuestions.length} 問</b><p>クイズは任意です。次の野菜や「まなぶ」に進めます。</p><button class=primary onclick="go('home')">次の野菜を見てみる</button><button class=secondary onclick="go('learn')">まなぶ一覧へ</button></div>`}
