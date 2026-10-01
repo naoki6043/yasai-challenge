@@ -97,6 +97,75 @@ function loadPublishedRecipes(){
   });
 }
 function remoteByName(name){return remoteRecipes.find(r=>r['料理名']===name)}
+function bandLabel(band){
+  return {
+    low:'低学年',
+    mid:'中学年',
+    high:'高学年'
+  }[band] || '';
+}
+
+function sheetLessonsForBand(band){
+  if(!remoteLoaded || !remoteLessons.length) return [];
+
+  return remoteLessons
+    .filter(r=>String(r['学年区分']||'').trim()===bandLabel(band))
+    .sort((a,b)=>(Number(a['ステージ'])||99)-(Number(b['ステージ'])||99))
+    .map(r=>{
+      const lessonId=String(r['lesson_id']||'').trim();
+
+      const points=[
+        r['学習ポイント1'],
+        r['学習ポイント2'],
+        r['学習ポイント3']
+      ].filter(x=>String(x||'').trim()!=='');
+
+      const quiz=remoteQuizzes
+        .filter(q=>String(q['lesson_id']||'').trim()===lessonId)
+        .map(q=>{
+          const choices=[
+            q['選択肢1'],
+            q['選択肢2'],
+            q['選択肢3'],
+            q['選択肢4']
+          ].filter(x=>String(x||'').trim()!=='');
+
+          const answer=Math.max(
+            0,
+            (Number(q['正解'])||1)-1
+          );
+
+          return [
+            q['問題文']||'',
+            choices,
+            answer,
+            q['正解時解説']||''
+          ];
+        });
+
+      return {
+        lesson_id:lessonId,
+        title:r['タイトル']||'',
+        intro:r['導入']||'',
+        points:points,
+        action:r['やってみよう']||'',
+        summary:r['まとめ']||'',
+        content_version:r['content_version']||'',
+        updated:r['更新日']||'',
+        quiz:quiz
+      };
+    });
+}
+
+function lessonBank(){
+  const sheetBank=sheetLessonsForBand(profile.band);
+
+  if(sheetBank.length){
+    return sheetBank;
+  }
+
+  return lessons[profile.band] || [];
+}
 function currentVegetables(){
   return vegetables;
 }
@@ -158,17 +227,116 @@ function homeRecipeRow(v){return `<section class=homeRow><div class=vegTitle><sp
 function openRecipeHome(vegName,i){vegSel=currentVegetables().find(v=>v[0]===vegName); recipeSel={veg:vegName,name:vegSel[2][i]}; log('recipe_open',{veg:vegName,recipe:recipeSel.name}); page='recipe';render()}
 function recipe(){let g={low:'おうちの人といっしょに、できることを見つけよう。',mid:'できるところは自分で。包丁や火はおうちの人と安全を確認しよう。',high:'調理の手順と安全を考えながら参加しよう。'}[profile.band];app.innerHTML=`<button class=back onclick="go('home')">‹ ホームにもどる</button>${head(recipeSel.name,recipeSel.veg)}${recipePhoto(recipeSel.name)?`<div class=card><img class=detailRecipePhoto src="${recipePhoto(recipeSel.name)}" alt="${recipeSel.name}"></div>`:''}<div class=card><div class=lessonBox><strong>今日のチャレンジ</strong><p>${g}</p></div>${recipeDetailHTML(recipeSel.name)}</div><div class=card><h3>やったことを記録</h3><div class=actions><button class=made onclick="mark('made')">👩‍🍳 作った</button><button class=ate onclick="mark('ate')">😋 食べた</button></div><p class=note>「作った」と「食べた」は別々に記録します。</p></div>`}
 function mark(t){log(t,{veg:recipeSel.veg,recipe:recipeSel.name});alert(t==='ate'?'「食べた」を記録しました。まなぶのページも見てみよう！':'「作った」を記録しました。');render()}
-function completedLessonIndices(){return lessons[profile.band].map((_,i)=>i).filter(i=>learnDone.includes(profile.band+'-'+i))}
+function completedLessonIndices(){
+  return lessonBank()
+    .map((_,i)=>i)
+    .filter(i=>learnDone.includes(profile.band+'-'+i));
+}
 function quizOpportunityState(){
   let n=completedLessonIndices().length;
   let available=QUIZ_MILESTONES.filter(m=>n>=m && !quizDone.includes(profile.band+'-m'+m));
   return {n,available,next:QUIZ_MILESTONES.find(m=>n<m)};
 }
 function quizPrompt(){let qs=quizOpportunityState();if(!qs.available.length)return '';let m=qs.available[0];return `<div class="card quizPrompt"><b>📝 学んだことをクイズでたしかめてみる？</b><p>${m}つの「まなぶ」が終わりました。これまで学んだ内容だけから問題が出ます。</p><button class=primary onclick="openQuizChoice(${m})">クイズをえらぶ</button><p class=note>今はやらなくても大丈夫。あとからいつでも挑戦できます。</p></div>`}
-function learn(){let u=unlockedStage(), bank=lessons[profile.band],qs=quizOpportunityState();app.innerHTML=head('まなぶ',`${profile.grade}年生に合わせた内容です`)+`<div class=card><b>まず学ぶ。クイズはあとで、自分で選んで挑戦。</b><p class=note>クイズは複数の学習を終えた後に表示され、未学習の内容からは出題しません。</p></div>${quizPrompt()}<div class=timeline>${bank.map((L,i)=>{let open=i<=u,done=learnDone.includes(profile.band+'-'+i);return `<div class="stage ${open?'open':'closed'}"><b>${open?'🔓':'🔒'} ${i+1}. ${L.title}${done?' ✓学習':''}</b><span class=note>${i===0?'最初からOPEN':`${thresholds[i]}回食べるとOPEN`}</span>${open?`<button class=secondary onclick="openLesson(${i})">${done?'もう一度見る':'学んでみる'}</button>`:''}</div>`}).join('')}</div>${qs.next?`<p class=note>次のクイズ選択は「まなぶ」を${qs.next}つ完了すると表示されます。</p>`:''}`}
-function openLesson(i){lessonSel=i;log('lesson_open',{stage:i+1,title:lessons[profile.band][i].title});page='lesson';render()}
-function lesson(){let L=lessons[profile.band][lessonSel],key=profile.band+'-'+lessonSel,done=learnDone.includes(key);app.innerHTML=`<button class=back onclick="go('learn')">‹ まなぶにもどる</button>${head(L.title,`${lessonSel+1} / 6`)}<div class="card lesson"><div class=lessonBox><strong>まず考えてみよう</strong><p>${L.intro}</p></div><div class=lessonBox><strong>ここを覚えよう</strong><ul>${L.points.map(x=>`<li>${x}</li>`).join('')}</ul></div><div class=lessonBox><strong>やってみよう</strong><p>${L.action}</p></div><div class=lessonBox><strong>まとめ</strong><p>${L.points.join(' ')}</p></div>${done?`<div class=doneBox>✓ この「まなぶ」は完了しています。<br><span class=note>クイズは「まなぶ」一覧に、いくつか学習したあとで表示されます。</span></div>`:`<button class=primary onclick="finishLesson()">ここまで学んだ</button>`}</div>`}
-function finishLesson(){let k=profile.band+'-'+lessonSel;if(!learnDone.includes(k)){learnDone.push(k);save('learnDone',learnDone);log('lesson_complete',{stage:lessonSel+1,title:lessons[profile.band][lessonSel].title})}page='learn';render()}
+function learn(){let u=unlockedStage(), bank=lessonBank(),qs=quizOpportunityState();app.innerHTML=head('まなぶ',`${profile.grade}年生に合わせた内容です`)+`<div class=card><b>まず学ぶ。クイズはあとで、自分で選んで挑戦。</b><p class=note>クイズは複数の学習を終えた後に表示され、未学習の内容からは出題しません。</p></div>${quizPrompt()}<div class=timeline>${bank.map((L,i)=>{let open=i<=u,done=learnDone.includes(profile.band+'-'+i);return `<div class="stage ${open?'open':'closed'}"><b>${open?'🔓':'🔒'} ${i+1}. ${L.title}${done?' ✓学習':''}</b><span class=note>${i===0?'最初からOPEN':`${thresholds[i]}回食べるとOPEN`}</span>${open?`<button class=secondary onclick="openLesson(${i})">${done?'もう一度見る':'学んでみる'}</button>`:''}</div>`}).join('')}</div>${qs.next?`<p class=note>次のクイズ選択は「まなぶ」を${qs.next}つ完了すると表示されます。</p>`:''}`}
+function openLesson(i){
+  lessonSel=i;
+  const L=lessonBank()[i];
+
+  log('lesson_open',{
+    stage:i+1,
+    lesson_id:L?.lesson_id||'',
+    title:L?.title||''
+  });
+
+  page='lesson';
+  render();
+}
+function lesson(){
+  let bank=lessonBank();
+  let L=bank[lessonSel];
+
+  if(!L){
+    app.innerHTML=
+      `<button class=back onclick="go('learn')">‹ まなぶにもどる</button>`+
+      head('まなぶ','')+
+      `<div class=card><p>学習内容を読み込めませんでした。</p></div>`;
+    return;
+  }
+
+  let key=profile.band+'-'+lessonSel;
+  let done=learnDone.includes(key);
+
+  let summary=
+    L.summary ||
+    (L.points ? L.points.join(' ') : '');
+
+  app.innerHTML=
+    `<button class=back onclick="go('learn')">‹ まなぶにもどる</button>`+
+    head(L.title,`${lessonSel+1} / ${bank.length}`)+
+    `<div class="card lesson">
+
+      <div class=lessonBox>
+        <strong>まず考えてみよう</strong>
+        <p>${L.intro||''}</p>
+      </div>
+
+      <div class=lessonBox>
+        <strong>ここを覚えよう</strong>
+        <ul>
+          ${(L.points||[]).map(x=>`<li>${x}</li>`).join('')}
+        </ul>
+      </div>
+
+      <div class=lessonBox>
+        <strong>やってみよう</strong>
+        <p>${L.action||''}</p>
+      </div>
+
+      <div class=lessonBox>
+        <strong>まとめ</strong>
+        <p>${summary}</p>
+      </div>
+
+      ${L.updated
+        ? `<p class=note>内容更新：${L.updated}</p>`
+        : ''
+      }
+
+      ${done
+        ? `<div class=doneBox>
+             ✓ この「まなぶ」は完了しています。<br>
+             <span class=note>
+               クイズは「まなぶ」一覧に、いくつか学習したあとで表示されます。
+             </span>
+           </div>`
+        : `<button class=primary onclick="finishLesson()">
+             ここまで学んだ
+           </button>`
+      }
+
+    </div>`;
+}
+function finishLesson(){
+  let bank=lessonBank();
+  let L=bank[lessonSel];
+  let k=profile.band+'-'+lessonSel;
+
+  if(!learnDone.includes(k)){
+    learnDone.push(k);
+    save('learnDone',learnDone);
+
+    log('lesson_complete',{
+      stage:lessonSel+1,
+      lesson_id:L?.lesson_id||'',
+      title:L?.title||'',
+      content_version:L?.content_version||''
+    });
+  }
+
+  page='learn';
+  render();
+}
 function openQuizChoice(m){quizOpportunity=m;log('quiz_choice_open',{milestone:m,learned:completedLessonIndices().length});page='quizChoice';render()}
 function quizChoice(){let m=quizOpportunity, key=profile.band+'-m'+m;if(quizDone.includes(key)){go('learn');return}app.innerHTML=`<button class=back onclick="go('learn')">‹ まなぶにもどる</button>${head('クイズにちょうせん',`「まなぶ」${m}つ完了後の確認`)}<div class=card><h2>これまで学んだことをたしかめる？</h2><p>完了した「まなぶ」の内容だけから4問出題します。</p><button class=primary onclick="startPooledQuiz(${m})">4問クイズをはじめる</button><button class=secondary onclick="go('learn')">今はやらない</button><p class=note>やらなくても次の学習や野菜チャレンジに進めます。</p></div>`}
 function startPooledQuiz(m){let idx=completedLessonIndices().filter(i=>i<m);let pool=[];idx.forEach(i=>lessons[profile.band][i].quiz.forEach((q,j)=>pool.push({q,stage:i,item:j})));quizQuestions=pool.slice(0,4);quizIndex=0;quizScore=0;quizOpportunity=m;log('learning_quiz_start',{milestone:m,eligible_items:pool.length,total:quizQuestions.length});page='pooledQuiz';render()}
