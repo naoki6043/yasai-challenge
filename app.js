@@ -402,6 +402,25 @@ function quizChoice(){
        </p>
      </div>`;
 }
+function shuffledQuestion(q){
+
+  const items=q.choices.map((text,index)=>({
+    text:text,
+    correct:index===q.answer
+  }));
+
+  // Fisher-Yates shuffle
+  for(let i=items.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [items[i],items[j]]=[items[j],items[i]];
+  }
+
+  return {
+    ...q,
+    choices:items.map(x=>x.text),
+    answer:items.findIndex(x=>x.correct)
+  };
+}
 function startPooledQuiz(m){
 
   const bank=lessonBank();
@@ -417,12 +436,16 @@ function startPooledQuiz(m){
       return;
     }
 
-    // この学習に登録されている問題から1問選ぶ
+     // この学習に登録されている問題から1問選ぶ
     const selected=
       L.quiz[Math.floor(Math.random()*L.quiz.length)];
 
+    // 選択肢の順番をランダムにする
+    const shuffled=
+      shuffledQuestion(selected);
+
     candidates.push({
-      q:selected,
+      q:shuffled,
       stage:i,
       lesson_id:L.lesson_id||'',
       lesson_title:L.title||'',
