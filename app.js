@@ -7,9 +7,71 @@ let page=profile?'home':'setup', vegSel=null, recipeSel=null, lessonSel=null, qu
 let calendarCursor=new Date();
 const recipeImages={'小松菜お浸し':'images/recipe_01.jpeg'};
 let remoteRecipes=[]; let remoteLoaded=false;
-async function loadPublishedRecipes(){
-  if(!window.RECIPE_API_URL || window.RECIPE_API_URL.includes('ここに')) return;
-  try{const r=await fetch(window.RECIPE_API_URL,{cache:'no-store'}); if(!r.ok)throw new Error('HTTP '+r.status); const j=await r.json(); remoteRecipes=Array.isArray(j.recipes)?j.recipes:[]; remoteLoaded=true;}catch(e){console.warn('レシピ取得失敗',e);}
+function loadPublishedRecipes(){
+  return new Promise((resolve)=>{
+    if(!window.RECIPE_API_URL || window.RECIPE_API_URL.includes('ここに')){
+      console.warn('レシピAPI URLが設定されていません');
+      resolve();
+      return;
+    }
+
+    const callbackName='recipeCallback_'+Date.now();
+
+    const script=document.createElement('script');
+
+    const separator=window.RECIPE_API_URL.includes('?')?'&':'?';
+
+    const timeout=setTimeout(()=>{
+      cleanup();
+      console.warn('レシピAPIの読み込みがタイムアウトしました');
+      resolve();
+    },10000);
+
+    function cleanup(){
+      clearTimeout(timeout);
+
+      if(script.parentNode){
+        script.parentNode.removeChild(script);
+      }
+
+      try{
+        delete window[callbackName];
+      }catch(e){
+        window[callbackName]=undefined;
+      }
+    }
+
+    window[callbackName]=function(data){
+      if(data && data.ok===true && Array.isArray(data.recipes)){
+        remoteRecipes=data.recipes;
+        remoteLoaded=true;
+
+        console.log(
+          '公開レシピを取得しました：',
+          remoteRecipes.length+'件'
+        );
+      }else{
+        console.warn('レシピAPIの応答形式が正しくありません',data);
+      }
+
+      cleanup();
+      resolve();
+    };
+
+    script.onerror=function(){
+      console.warn('レシピAPIへの接続に失敗しました');
+      cleanup();
+      resolve();
+    };
+
+    script.src=
+      window.RECIPE_API_URL+
+      separator+
+      'callback='+encodeURIComponent(callbackName)+
+      '&_='+Date.now();
+
+    document.head.appendChild(script);
+  });
 }
 function remoteByName(name){return remoteRecipes.find(r=>r['料理名']===name)}
 function currentVegetables(){
