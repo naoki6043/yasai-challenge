@@ -78,7 +78,7 @@ function currentVegetables(){
   return vegetables;
 }
 function recipePhoto(name){let r=remoteByName(name);if(r&&r['完成写真URL'])return r['完成写真URL'];if(r&&r['完成写真ファイル名'])return 'images/'+r['完成写真ファイル名'];return recipeImages[name]||''}
-function recipeDetailHTML(name){let r=remoteByName(name);if(!r)return '<p>デモ版のため、材料・作り方は未登録です。</p>';let mats=[],steps=[];for(let i=1;i<=8;i++)if(r['材料'+i])mats.push(`<li>${r['材料'+i]}${r['分量'+i]?'　'+r['分量'+i]:''}</li>`);for(let i=1;i<=6;i++)if(r['作り方'+i])steps.push(`<li>${r['作り方'+i]}</li>`);return `${mats.length?`<h3>材料${r['何人分']?'（'+r['何人分']+'）':''}</h3><ul>${mats.join('')}</ul>`:''}${steps.length?`<h3>作り方</h3><ol>${steps.join('')}</ol>`:''}${r['調理ポイント']?`<div class=lessonBox><strong>ポイント</strong><p>${r['調理ポイント']}</p></div>`:''}${r['大人と一緒に行う工程']?`<div class=lessonBox><strong>安全に作ろう</strong><p>${r['大人と一緒に行う工程']}</p></div>`:''}`}
+function recipeDetailHTML(name){let r=remoteByName(name);if(!r)return '<p>デモ版のため、材料・作り方は未登録です。</p>';let mats=[],steps=[];for(let i=1;i<=8;i++)if(r['材料'+i])mats.push(`<li>${r['材料'+i]}${r['分量'+i]?'　'+r['分量'+i]:''}</li>`);for(let i=1;i<=6;i++)if(r['作り方'+i])steps.push(`<li>${r['作り方'+i]}</li>`);return `${mats.length?`<h3>材料${r['何人分']?'（'+r['何人分']+'人分）':''}</h3><ul>${mats.join('')}</ul>`:''}${steps.length?`<h3>作り方</h3><ol>${steps.join('')}</ol>`:''}${r['調理ポイント']?`<div class=lessonBox><strong>ポイント</strong><p>${r['調理ポイント']}</p></div>`:''}${r['大人と一緒に行う工程']?`<div class=lessonBox><strong>安全に作ろう</strong><p>${r['大人と一緒に行う工程']}</p></div>`:''}`}
 
 const QUIZ_MILESTONES=[2,4,6];
 const bandOf=g=>g<=2?'low':g<=4?'mid':'high'; const bandName={low:'低学年',mid:'中学年',high:'高学年'};
