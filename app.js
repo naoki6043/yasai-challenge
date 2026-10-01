@@ -338,8 +338,115 @@ function finishLesson(){
   render();
 }
 function openQuizChoice(m){quizOpportunity=m;log('quiz_choice_open',{milestone:m,learned:completedLessonIndices().length});page='quizChoice';render()}
-function quizChoice(){let m=quizOpportunity, key=profile.band+'-m'+m;if(quizDone.includes(key)){go('learn');return}app.innerHTML=`<button class=back onclick="go('learn')">‹ まなぶにもどる</button>${head('クイズにちょうせん',`「まなぶ」${m}つ完了後の確認`)}<div class=card><h2>これまで学んだことをたしかめる？</h2><p>完了した「まなぶ」の内容だけから4問出題します。</p><button class=primary onclick="startPooledQuiz(${m})">4問クイズをはじめる</button><button class=secondary onclick="go('learn')">今はやらない</button><p class=note>やらなくても次の学習や野菜チャレンジに進めます。</p></div>`}
-function startPooledQuiz(m){let idx=completedLessonIndices().filter(i=>i<m);let pool=[];idx.forEach(i=>lessons[profile.band][i].quiz.forEach((q,j)=>pool.push({q,stage:i,item:j})));quizQuestions=pool.slice(0,4);quizIndex=0;quizScore=0;quizOpportunity=m;log('learning_quiz_start',{milestone:m,eligible_items:pool.length,total:quizQuestions.length});page='pooledQuiz';render()}
+function quizChoice(){
+  let m=quizOpportunity;
+  let key=profile.band+'-m'+m;
+
+  if(quizDone.includes(key)){
+    go('learn');
+    return;
+  }
+
+  const bank=lessonBank();
+  const completed=completedLessonIndices();
+
+  let questionCount=0;
+
+  completed.forEach(i=>{
+    const L=bank[i];
+
+    if(L && Array.isArray(L.quiz)){
+      questionCount+=L.quiz.length;
+    }
+  });
+
+  const quizCount=Math.min(4,questionCount);
+
+  app.innerHTML=
+    `<button class=back onclick="go('learn')">
+       ‹ まなぶにもどる
+     </button>`+
+    head(
+      'クイズにちょうせん',
+      `「まなぶ」${m}つ完了後の確認`
+    )+
+    `<div class=card>
+       <h2>これまで学んだことをたしかめる？</h2>
+
+       <p>
+         完了した「まなぶ」の内容だけから
+         ${quizCount}問出題します。
+       </p>
+
+       ${
+         quizCount>0
+         ? `<button class=primary onclick="startPooledQuiz(${m})">
+              ${quizCount}問クイズをはじめる
+            </button>`
+         : `<p class=note>
+              現在、公開されているクイズはありません。
+            </p>`
+       }
+
+       <button class=secondary onclick="go('learn')">
+         今はやらない
+       </button>
+
+       <p class=note>
+         やらなくても次の学習や野菜チャレンジに進めます。
+       </p>
+     </div>`;
+}
+function startPooledQuiz(m){
+  const bank=lessonBank();
+
+  // 実際に完了している学習だけを対象にする
+  const completed=completedLessonIndices();
+
+  let pool=[];
+
+  completed.forEach(i=>{
+    const L=bank[i];
+
+    if(!L || !Array.isArray(L.quiz)){
+      return;
+    }
+
+    L.quiz.forEach((q,j)=>{
+      pool.push({
+        q:q,
+        stage:i,
+        item:j,
+        lesson_id:L.lesson_id||'',
+        content_version:L.content_version||''
+      });
+    });
+  });
+
+  // 最大4問
+  quizQuestions=pool.slice(0,4);
+
+  quizIndex=0;
+  quizScore=0;
+  quizOpportunity=m;
+
+  log('learning_quiz_start',{
+    milestone:m,
+    eligible_items:pool.length,
+    total:quizQuestions.length
+  });
+
+  // 問題が1問もない場合
+  if(quizQuestions.length===0){
+    alert('現在、挑戦できるクイズはありません。');
+    page='learn';
+    render();
+    return;
+  }
+
+  page='pooledQuiz';
+  render();
+}
 function pooledQuiz(){let z=quizQuestions[quizIndex],q=z.q;app.innerHTML=`<button class=back onclick="abandonQuiz()">‹ あとでやる</button>${head('確認クイズ',`${quizIndex+1} / ${quizQuestions.length}`)}<div class=card><p class=note>これまでに学んだ内容から出題しています。</p><h2>${q[0]}</h2><div class=choice>${q[1].map((x,i)=>`<button onclick="pooledAns(${i})">${x}</button>`).join('')}</div></div>`}
 function pooledAns(i){let z=quizQuestions[quizIndex],q=z.q,ok=i===q[2];if(ok)quizScore++;log('learning_quiz_answer',{milestone:quizOpportunity,stage:z.stage+1,item:z.item+1,correct:ok});app.innerHTML=`${head('答え合わせ','確認クイズ')}<div class=card><h2>${ok?'○ よくできました':'学んだところを確認しよう'}</h2><div class=lessonBox><strong>学んだ内容</strong><p>${q[3]}</p></div><button class=primary onclick="nextPooledQ()">${quizIndex+1<quizQuestions.length?'次の問題':'結果を見る'}</button></div>`}
 function nextPooledQ(){quizIndex++;if(quizIndex<quizQuestions.length){page='pooledQuiz';render()}else{let key=profile.band+'-m'+quizOpportunity;if(!quizDone.includes(key))quizDone.push(key);save('quizDone',quizDone);log('learning_quiz_complete',{milestone:quizOpportunity,score:quizScore,total:quizQuestions.length,accuracy:quizQuestions.length?quizScore/quizQuestions.length:null});page='quizResult';render()}}
