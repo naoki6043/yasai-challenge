@@ -480,9 +480,73 @@ function record(){
  `<h2>これまでの記録</h2><div class=stats><div class=card><b>${ateCount()}</b><span class=note>食べた</span></div><div class=card><b>${uniqueVeg()}</b><span class=note>種類</span></div><div class=card><b>${learnDone.length}</b><span class=note>学習完了</span></div></div><div class=card><ul class=history>${history}</ul></div>`+
  `<h2>学習・クイズ記録</h2><div class=card><p>クイズ提示機会：${opportunities}回 ／ 開始：${starts}回 ／ 完了：${completes}回</p><p>開始率：${startRate}%　完了率：${completeRate}%</p><p>回答：${answers.length}問　正答率：${acc}%</p><p class=note>クイズを実施しなかった場合も提示機会として記録します。</p></div>`
 }
+function notice(){
+
+  // 更新日の新しい順に並べる
+  const notices=[...remoteNotices].sort((a,b)=>{
+    const da=String(a['更新日']||'');
+    const db=String(b['更新日']||'');
+    return db.localeCompare(da);
+  });
+
+  let body='';
+
+  if(notices.length===0){
+
+    body=`
+      <div class="card">
+        <p>現在、お知らせはありません。</p>
+      </div>
+    `;
+
+  }else{
+
+    body=notices.map(n=>{
+
+      const title=n['タイトル']||'お知らせ';
+      const text=n['本文']||'';
+      const date=n['更新日']||'';
+
+      return `
+        <article class="card noticeCard">
+
+          <div class="noticeDate">
+            ${date ? `更新日：${date}` : ''}
+          </div>
+
+          <h2>${title}</h2>
+
+          <div class="noticeText">
+            ${String(text).replace(/\n/g,'<br>')}
+          </div>
+
+        </article>
+      `;
+
+    }).join('');
+
+  }
+
+  app.innerHTML=
+    head(
+      'お知らせ',
+      '新しい情報をチェックしよう'
+    )+
+    `
+      <div class="noticeList">
+        ${body}
+      </div>
+    `;
+}
 function settings(){app.innerHTML=head('せってい','秋冬版 v7')+`<div class=card><b>${profile.grade}年生・${bandName[profile.band]}</b><p>学年を変えると、学ぶ内容と確認クイズが切り替わります。</p><button class=secondary onclick="changeGrade()">学年を選び直す</button></div>`}
 function changeGrade(){if(confirm('学年を選び直しますか？ 行動記録は残ります。')){profile=null;localStorage.removeItem(PREFIX+'profile');page='setup';render()}}
 function go(p){page=p;render();scrollTo(0,0)}
-function navRender(){if(page==='setup'){nav.innerHTML='';return}let n=[['home','⌂','ホーム'],['learn','📖','まなぶ'],['record','▣','きろく'],['settings','⚙','設定']];nav.innerHTML=n.map(x=>`<button class="${page===x[0]?'active':''}" onclick="go('${x[0]}')"><b>${x[1]}</b>${x[2]}</button>`).join('')}
-function render(){let f={setup,home,recipe,learn,lesson,quizChoice,pooledQuiz,quizResult,record,settings}[page]||home;f();navRender()}
+let n=[
+  ['home','⌂','ホーム'],
+  ['learn','📖','まなぶ'],
+  ['record','▣','きろく'],
+  ['notice','🔔','お知らせ'],
+  ['settings','⚙','設定']
+];nav.innerHTML=n.map(x=>`<button class="${page===x[0]?'active':''}" onclick="go('${x[0]}')"><b>${x[1]}</b>${x[2]}</button>`).join('')}
+function render(){let f={setup,home,recipe,learn,lesson,quizChoice,pooledQuiz,quizResult,record,notice,settings}[page]||home;f();navRender()}
 loadPublishedRecipes().finally(()=>render());
