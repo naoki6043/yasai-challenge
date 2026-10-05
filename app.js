@@ -193,6 +193,57 @@ function appTitle(){
 
   return '朝食やさいチャレンジ';
 }
+// 実学年に合わせた子ども向け表示
+function gradeText(key){
+  const g=profile?.grade || 1;
+
+  const texts={
+    homeQuestion:{
+      1:'つぎは どの やさいにする？',
+      2:'次は どの やさいにする？',
+      3:'次はどの野菜にする？'
+    },
+
+    homeGuide:{
+      1:'10しゅるいの やさいから、たべてみたい りょうりを えらぼう。',
+      2:'10しゅるいの やさいから、食べてみたい りょうりを 自分でえらぼう。',
+      3:'10種類の野菜から、食べてみたい料理を自分で選ぼう。'
+    },
+
+    ateCount:{
+      1:'たべた かいすう',
+      2:'食べた かいすう',
+      3:'食べた回数'
+    },
+
+    vegKinds:{
+      1:'やさいの しゅるい',
+      2:'やさいの しゅるい',
+      3:'野菜の種類'
+    },
+
+    learnStatus:{
+      1:'まなぶ',
+      2:'まなぶ',
+      3:'まなぶ'
+    },
+
+    recipeHeading:{
+      1:'あき・ふゆの やさいレシピ',
+      2:'秋・冬の やさいレシピ',
+      3:'秋冬の野菜レシピ'
+    }
+  };
+
+  const item=texts[key];
+
+  if(!item) return '';
+
+  if(g===1) return item[1];
+  if(g===2) return item[2];
+
+  return item[3];
+}
 const vegetables=[
 ['小松菜','🥬',['小松菜お浸し','小松菜アーモンドフィッシュ炒め','小松菜クリーム煮']],
 ['ほうれん草','🌿',['ほうれん草ショウガお浸し','ほうれん草エノキサラダ','ほうれん草ベーコンバター炒め']],
@@ -238,7 +289,97 @@ function unlockedStage(){let c=ateCount(),n=0; thresholds.forEach((t,i)=>{if(c>=
 function head(t,s=''){return `<div class=top><div><div class=brand>${t}</div><div class=sub>${s}</div></div><span>🍂</span></div>`}
 function setup(){app.innerHTML=head('朝食やさいチャレンジ','はじめに学年をえらんでね')+`<div class=card><h2>あなたは何年生？</h2><p>学年に合わせて「まなぶ」と確認クイズが変わります。</p><div class=gradegrid>${[1,2,3,4,5,6].map(g=>`<button onclick=chooseGrade(${g})><b>${g}</b>年生</button>`).join('')}</div><p class=note>1・2年生＝低学年、3・4年生＝中学年、5・6年生＝高学年として内容を切り替えます。</p></div>`;nav.innerHTML=''}
 function chooseGrade(g){profile={id:'local-'+Date.now(),grade:g,band:bandOf(g),version:'autumn-winter-v7'};save('profile',profile);log('grade_selected');page='home';render()}
-function home(){let c=ateCount(),u=uniqueVeg(),stage=unlockedStage(),next=thresholds.find(t=>t>c);let msg=next?`あと ${next-c} 回食べると、次の「まなぶ」がひらくよ！`:'6つの「まなぶ」がすべて開きました！';app.innerHTML=head(appTitle(),`${profile.grade}年生・${bandName[profile.band]}`)+`<div class=hero><b>次はどの野菜にする？</b><p>10種類の野菜から、食べてみたい料理を自分でえらぼう。</p></div><div class=stats><div class=card><b>${c}</b><span class=note>食べた回数</span></div><div class=card><b>${u}</b><span class=note>野菜の種類</span></div><div class=card><b>${stage+1}</b><span class=note>まなぶ OPEN</span></div></div><div class=unlock>🌱 <b>${msg}</b><div class=progress><i style="width:${Math.min(100,c/10*100)}%"></i></div></div><h2>秋冬の野菜レシピ</h2><div class=homeRows>${currentVegetables().map(homeRecipeRow).join('')}</div>`}
+function home(){
+
+  let c=ateCount();
+  let u=uniqueVeg();
+  let stage=unlockedStage();
+  let next=thresholds.find(t=>t>c);
+
+  let msg='';
+
+  if(next){
+
+    if(profile.grade===1){
+      msg=`あと ${next-c}かい たべると、つぎの「まなぶ」が ひらくよ！`;
+    }
+    else if(profile.grade===2){
+      msg=`あと ${next-c}回 食べると、次の「まなぶ」が ひらくよ！`;
+    }
+    else{
+      msg=`あと ${next-c} 回食べると、次の「まなぶ」がひらくよ！`;
+    }
+
+  }else{
+
+    if(profile.grade===1){
+      msg='6つの「まなぶ」が ぜんぶ ひらいたよ！';
+    }
+    else if(profile.grade===2){
+      msg='6つの「まなぶ」が ぜんぶ ひらいたよ！';
+    }
+    else{
+      msg='6つの「まなぶ」がすべて開きました！';
+    }
+  }
+
+  app.innerHTML=
+    head(
+      appTitle(),
+      `${profile.grade}年生・${bandName[profile.band]}`
+    )+
+
+    `<div class=hero>
+
+      <b>${gradeText('homeQuestion')}</b>
+
+      <p>${gradeText('homeGuide')}</p>
+
+    </div>
+
+    <div class=stats>
+
+      <div class=card>
+        <b>${c}</b>
+        <span class=note>
+          ${gradeText('ateCount')}
+        </span>
+      </div>
+
+      <div class=card>
+        <b>${u}</b>
+        <span class=note>
+          ${gradeText('vegKinds')}
+        </span>
+      </div>
+
+      <div class=card>
+        <b>${stage+1}</b>
+        <span class=note>
+          ${gradeText('learnStatus')}
+        </span>
+      </div>
+
+    </div>
+
+    <div class=unlock>
+
+      🌱 <b>${msg}</b>
+
+      <div class=progress>
+        <i style="width:${Math.min(100,c/10*100)}%"></i>
+      </div>
+
+    </div>
+
+    <h2>${gradeText('recipeHeading')}</h2>
+
+    <div class=homeRows>
+      ${currentVegetables()
+        .map(homeRecipeRow)
+        .join('')}
+    </div>`;
+}
 function recipeStatus(veg,name){
 
   const sameRecipe=e=>
