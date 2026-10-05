@@ -811,10 +811,10 @@ else{
     </span>
   </div>
 
-  <div class=card>
+ <div class=card>
   <b>${recipeKinds}</b>
   <span class=note>
-    TEST 食べた料理
+    ${gradeText('recipeKinds')}
   </span>
 </div>
 
