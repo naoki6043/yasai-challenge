@@ -226,12 +226,199 @@ function setup(){app.innerHTML=head('秋冬やさいチャレンジ','はじめ�
 function chooseGrade(g){profile={id:'local-'+Date.now(),grade:g,band:bandOf(g),version:'autumn-winter-v7'};save('profile',profile);log('grade_selected');page='home';render()}
 function home(){let c=ateCount(),u=uniqueVeg(),stage=unlockedStage(),next=thresholds.find(t=>t>c);let msg=next?`あと ${next-c} 回食べると、次の「まなぶ」がひらくよ！`:'6つの「まなぶ」がすべて開きました！';app.innerHTML=head('秋冬やさいチャレンジ',`${profile.grade}年生・${bandName[profile.band]}`)+`<div class=hero><b>次はどの野菜にする？</b><p>10種類の野菜から、食べてみたい料理を自分でえらぼう。</p></div><div class=stats><div class=card><b>${c}</b><span class=note>食べた回数</span></div><div class=card><b>${u}</b><span class=note>野菜の種類</span></div><div class=card><b>${stage+1}</b><span class=note>まなぶ OPEN</span></div></div><div class=unlock>🌱 <b>${msg}</b><div class=progress><i style="width:${Math.min(100,c/10*100)}%"></i></div></div><h2>秋冬の野菜レシピ</h2><div class=homeRows>${currentVegetables().map(homeRecipeRow).join('')}</div>`}
 function recipeStatus(veg,name){
-  return {made:events.some(e=>e.type==='made'&&e.veg===veg&&e.recipe===name), ate:events.some(e=>e.type==='ate'&&e.veg===veg&&e.recipe===name)}
+
+  const sameRecipe=e=>
+    e.veg===veg &&
+    e.recipe===name;
+
+  return {
+    selfMade:events.some(e=>
+      e.type==='selfMade' &&
+      sameRecipe(e)
+    ),
+
+    togetherMade:events.some(e=>
+      e.type==='togetherMade' &&
+      sameRecipe(e)
+    ),
+
+    // 旧版で記録した「作った」も残して表示する
+    oldMade:events.some(e=>
+      e.type==='made' &&
+      sameRecipe(e)
+    ),
+
+    ate:events.some(e=>
+      e.type==='ate' &&
+      sameRecipe(e)
+    )
+  };
 }
-function homeRecipeRow(v){return `<section class=homeRow><div class=vegTitle><span>${v[1]}</span><b>${v[0]}</b><small>${ateEvents().some(e=>e.veg===v[0])?'✓ 食べた記録あり':''}</small></div><div class=threeRecipes>${v[2].map((name,i)=>{let st=recipeStatus(v[0],name);return `<button class=homeRecipe onclick="openRecipeHome('${v[0]}',${i})">${recipePhoto(name)?`<img class=recipePhoto src="${recipePhoto(name)}" alt="${name}">`:`<div class=photoPlaceholder>${v[1]}</div>`}<b>${name}</b><div class=checks><span class="check ${st.made?'on':''}">${st.made?'✓':'○'} 作った</span><span class="check ${st.ate?'on':''}">${st.ate?'✓':'○'} 食べた</span></div></button>`}).join('')}</div></section>`}
+}
+function homeRecipeRow(v){
+
+  return `
+    <section class=homeRow>
+
+      <div class=vegTitle>
+        <span>${v[1]}</span>
+        <b>${v[0]}</b>
+        <small>
+          ${ateEvents().some(e=>e.veg===v[0])
+            ? '✓ 食べた記録あり'
+            : ''
+          }
+        </small>
+      </div>
+
+      <div class=threeRecipes>
+
+        ${v[2].map((name,i)=>{
+
+          let st=recipeStatus(v[0],name);
+
+          let cookText='';
+          let cookOn=false;
+
+          if(st.selfMade){
+            cookText='✓ 自分で作った';
+            cookOn=true;
+          }
+          else if(st.togetherMade){
+            cookText='✓ いっしょに作った';
+            cookOn=true;
+          }
+          else if(st.oldMade){
+            cookText='✓ 作った（旧記録）';
+            cookOn=true;
+          }
+          else{
+            cookText='○ まだ作っていない';
+          }
+
+          return `
+            <button
+              class=homeRecipe
+              onclick="openRecipeHome('${v[0]}',${i})">
+
+              ${
+                recipePhoto(name)
+                ? `<img
+                     class=recipePhoto
+                     src="${recipePhoto(name)}"
+                     alt="${name}">
+                  `
+                : `<div class=photoPlaceholder>
+                     ${v[1]}
+                   </div>`
+              }
+
+              <b>${name}</b>
+
+              <div class=checks>
+
+                <span class="check ${cookOn?'on':''}">
+                  ${cookText}
+                </span>
+
+                <span class="check ${st.ate?'on':''}">
+                  ${st.ate?'✓':'○'} 食べた
+                </span>
+
+              </div>
+
+            </button>
+          `;
+
+        }).join('')}
+
+      </div>
+
+    </section>
+  `;
+}
 function openRecipeHome(vegName,i){vegSel=currentVegetables().find(v=>v[0]===vegName); recipeSel={veg:vegName,name:vegSel[2][i]}; log('recipe_open',{veg:vegName,recipe:recipeSel.name}); page='recipe';render()}
-function recipe(){let g={low:'おうちの人といっしょに、できることを見つけよう。',mid:'できるところは自分で。包丁や火はおうちの人と安全を確認しよう。',high:'調理の手順と安全を考えながら参加しよう。'}[profile.band];app.innerHTML=`<button class=back onclick="go('home')">‹ ホームにもどる</button>${head(recipeSel.name,recipeSel.veg)}${recipePhoto(recipeSel.name)?`<div class=card><img class=detailRecipePhoto src="${recipePhoto(recipeSel.name)}" alt="${recipeSel.name}"></div>`:''}<div class=card><div class=lessonBox><strong>今日のチャレンジ</strong><p>${g}</p></div>${recipeDetailHTML(recipeSel.name)}</div><div class=card><h3>やったことを記録</h3><div class=actions><button class=made onclick="mark('made')">👩‍🍳 作った</button><button class=ate onclick="mark('ate')">😋 食べた</button></div><p class=note>「作った」と「食べた」は別々に記録します。</p></div>`}
-function mark(t){log(t,{veg:recipeSel.veg,recipe:recipeSel.name});alert(t==='ate'?'「食べた」を記録しました。まなぶのページも見てみよう！':'「作った」を記録しました。');render()}
+function recipe(){
+
+  let g={
+    low:'おうちの人といっしょに、できることを見つけよう。',
+    mid:'できるところは自分で。包丁や火はおうちの人と安全を確認しよう。',
+    high:'調理の手順と安全を考えながら参加しよう。'
+  }[profile.band];
+
+  app.innerHTML=`
+    <button class=back onclick="go('home')">‹ ホームにもどる</button>
+
+    ${head(recipeSel.name,recipeSel.veg)}
+
+    ${recipePhoto(recipeSel.name)
+      ?`<div class=card>
+          <img class=detailRecipePhoto
+               src="${recipePhoto(recipeSel.name)}"
+               alt="${recipeSel.name}">
+        </div>`
+      :''
+    }
+
+    <div class=card>
+      <div class=lessonBox>
+        <strong>今日のチャレンジ</strong>
+        <p>${g}</p>
+      </div>
+
+      ${recipeDetailHTML(recipeSel.name)}
+    </div>
+
+    <div class=card>
+      <h3>やったことを記録</h3>
+
+      <p class=note>
+        この料理を、だれと作りましたか？
+      </p>
+
+      <div class=actions>
+        <button class=made onclick="mark('selfMade')">
+          👩‍🍳 自分で作った
+        </button>
+
+        <button class=made onclick="mark('togetherMade')">
+          👨‍👩‍👧 いっしょに作った
+        </button>
+
+        <button class=ate onclick="mark('ate')">
+          😋 食べた
+        </button>
+      </div>
+
+      <p class=note>
+        「自分で作った」は自分で料理したとき、
+        「いっしょに作った」はおうちの人などといっしょに料理したときに記録します。
+        「食べた」は別に記録できます。
+      </p>
+    </div>
+  `;
+}
+function mark(t){
+
+  log(t,{
+    veg:recipeSel.veg,
+    recipe:recipeSel.name
+  });
+
+  if(t==='selfMade'){
+    alert('「自分で作った」を記録しました。');
+  }
+
+  if(t==='togetherMade'){
+    alert('「いっしょに作った」を記録しました。');
+  }
+
+  if(t==='ate'){
+    alert('「食べた」を記録しました。まなぶのページも見てみよう！');
+  }
+
+  render();
+}
 function completedLessonIndices(){
   return lessonBank()
     .map((_,i)=>i)
@@ -613,7 +800,23 @@ function ymdFromTs(ts){let d=new Date(ts);return `${d.getFullYear()}-${String(d.
 function monthKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}
 function monthEvents(d){let k=monthKey(d);return events.filter(e=>ymdFromTs(e.ts).startsWith(k))}
 function dayEvents(dateStr){return events.filter(e=>ymdFromTs(e.ts)===dateStr)}
-function eventIcon(e){if(e.type==='made')return '🍳';if(e.type==='ate')return '🥕';if(e.type==='lesson_complete')return '📖';if(e.type==='learning_quiz_complete')return '✓';return ''}
+function eventIcon(e){
+
+  if(e.type==='selfMade') return '👩‍🍳';
+
+  if(e.type==='togetherMade') return '👪';
+
+  // 旧記録
+  if(e.type==='made') return '🍳';
+
+  if(e.type==='ate') return '🥕';
+
+  if(e.type==='lesson_complete') return '📖';
+
+  if(e.type==='learning_quiz_complete') return '✓';
+
+  return '';
+}
 function calendarHTML(d){
  let y=d.getFullYear(),m=d.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),startDay=first.getDay(),cells=[];
  for(let i=0;i<startDay;i++)cells.push('<div class="calCell empty"></div>');
@@ -625,7 +828,104 @@ function calendarHTML(d){
  return `<div class=calendarCard><div class=calHead><button onclick="moveMonth(-1)">‹</button><b>${y}年 ${m+1}月</b><button onclick="moveMonth(1)">›</button></div><div class=calWeek><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div><div class=calGrid>${cells.join('')}</div><div class=calLegend><span>🍳 作った</span><span>🥕 食べた</span><span>📖 学んだ</span><span>✓ クイズ</span></div></div>`
 }
 function moveMonth(n){calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+n,1);record()}
-function showDay(ds){let ev=dayEvents(ds).filter(e=>['made','ate','lesson_complete','learning_quiz_complete'].includes(e.type));let label=new Date(ds+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'});let body=ev.length?ev.map(e=>{if(e.type==='made')return `<li>🍳 作った：${e.veg||''} ${e.recipe||''}</li>`;if(e.type==='ate')return `<li>🥕 食べた：${e.veg||''} ${e.recipe||''}</li>`;if(e.type==='lesson_complete')return `<li>📖 学んだ：${e.title||('ステージ'+e.stage)}</li>`;if(e.type==='learning_quiz_complete')return `<li>✓ クイズ：${e.score}/${e.total}問</li>`;return ''}).join(''):'<li>この日の記録はありません。</li>';document.querySelector('#dayDetail').innerHTML=`<h3>${label}</h3><ul>${body}</ul>`;document.querySelector('#dayDetail').scrollIntoView({behavior:'smooth',block:'nearest'})}
+function showDay(ds){
+
+  let ev=dayEvents(ds).filter(e=>
+    [
+      'selfMade',
+      'togetherMade',
+      'made',
+      'ate',
+      'lesson_complete',
+      'learning_quiz_complete'
+    ].includes(e.type)
+  );
+
+  let label=
+    new Date(ds+'T00:00:00')
+      .toLocaleDateString(
+        'ja-JP',
+        {
+          month:'long',
+          day:'numeric',
+          weekday:'short'
+        }
+      );
+
+  let body=ev.length
+    ? ev.map(e=>{
+
+        if(e.type==='selfMade'){
+          return `
+            <li>
+              👩‍🍳 自分で作った：
+              ${e.veg||''} ${e.recipe||''}
+            </li>
+          `;
+        }
+
+        if(e.type==='togetherMade'){
+          return `
+            <li>
+              👪 いっしょに作った：
+              ${e.veg||''} ${e.recipe||''}
+            </li>
+          `;
+        }
+
+        // 以前のデータ
+        if(e.type==='made'){
+          return `
+            <li>
+              🍳 作った（旧記録）：
+              ${e.veg||''} ${e.recipe||''}
+            </li>
+          `;
+        }
+
+        if(e.type==='ate'){
+          return `
+            <li>
+              🥕 食べた：
+              ${e.veg||''} ${e.recipe||''}
+            </li>
+          `;
+        }
+
+        if(e.type==='lesson_complete'){
+          return `
+            <li>
+              📖 学んだ：
+              ${e.title||('ステージ'+e.stage)}
+            </li>
+          `;
+        }
+
+        if(e.type==='learning_quiz_complete'){
+          return `
+            <li>
+              ✓ クイズ：
+              ${e.score}/${e.total}問
+            </li>
+          `;
+        }
+
+        return '';
+
+      }).join('')
+
+    : '<li>この日の記録はありません。</li>';
+
+  document.querySelector('#dayDetail').innerHTML=
+    `<h3>${label}</h3>
+     <ul>${body}</ul>`;
+
+  document.querySelector('#dayDetail')
+    .scrollIntoView({
+      behavior:'smooth',
+      block:'nearest'
+    });
+}
 function record(){
  let starts=events.filter(e=>e.type==='learning_quiz_start').length, completes=events.filter(e=>e.type==='learning_quiz_complete').length, answers=events.filter(e=>e.type==='learning_quiz_answer'), correct=answers.filter(e=>e.correct).length, opportunities=QUIZ_MILESTONES.filter(m=>completedLessonIndices().length>=m).length;
  let startRate=opportunities?Math.round(starts/opportunities*100):0,completeRate=opportunities?Math.round(completes/opportunities*100):0,acc=answers.length?Math.round(correct/answers.length*100):0;
