@@ -479,9 +479,22 @@ function home(){
 }
 function recipeStatus(veg,name){
 
-  const sameRecipe=e=>
-    e.veg===veg &&
-    e.recipe===name;
+  const recipeId=recipeIds[name]||'';
+
+  const sameRecipe=e=>{
+
+    // 新しい記録はrecipe_idで判定
+    if(recipeId && e.recipe_id){
+      return e.recipe_id===recipeId;
+    }
+
+    // 以前の記録にはrecipe_idがないため、
+    // 旧料理名＋野菜名で互換判定
+    return (
+      e.veg===veg &&
+      e.recipe===name
+    );
+  };
 
   return {
     selfMade:events.some(e=>
@@ -494,7 +507,6 @@ function recipeStatus(veg,name){
       sameRecipe(e)
     ),
 
-    // 旧版で記録した「作った」も残して表示する
     oldMade:events.some(e=>
       e.type==='made' &&
       sameRecipe(e)
