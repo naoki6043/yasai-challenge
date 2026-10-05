@@ -381,30 +381,181 @@ high:[
 ]};
 const thresholds=[0,2,4,6,8,10];
 function log(type,data={}){events.push({type,ts:Date.now(),date:new Date().toLocaleDateString('ja-JP'),grade:profile?.grade,band:profile?.band,...data});save('events',events)}
-const ateEvents=()=>events.filter(e=>e.type==='ate'); const ateCount=()=>ateEvents().length; const uniqueVeg=()=>new Set(ateEvents().map(e=>e.veg)).size;
-function unlockedStage(){let c=ateCount(),n=0; thresholds.forEach((t,i)=>{if(c>=t)n=i}); return n}
+// ========================================
+// 食行動・調理行動の集計
+// ========================================
+
+const ateEvents=()=>
+  events.filter(e=>e.type==='ate');
+
+const cookEvents=()=>
+  events.filter(e=>
+    [
+      'selfMade',
+      'togetherMade',
+      'made'
+    ].includes(e.type)
+  );
+
+
+// 食べた総回数
+const ateCount=()=>
+  ateEvents().length;
+
+
+// 食べた野菜の種類数
+const uniqueVeg=()=>
+  new Set(
+    ateEvents()
+      .map(e=>e.veg)
+      .filter(Boolean)
+  ).size;
+
+
+// ----------------------------------------
+// イベントからrecipe_idを取得
+// 旧記録にも対応
+// ----------------------------------------
+
+function eventRecipeId(e){
+
+  if(e.recipe_id){
+    return String(e.recipe_id).trim();
+  }
+
+  // 旧データは料理名からrecipe_idへ変換
+  if(e.recipe && recipeIds[e.recipe]){
+    return recipeIds[e.recipe];
+  }
+
+  // IDに変換できない旧記録
+  return '';
+}
+
+
+// ----------------------------------------
+// 食べたレシピ種類数
+// ----------------------------------------
+
+function uniqueAteRecipes(){
+
+  const ids=new Set();
+  const legacy=new Set();
+
+  ateEvents().forEach(e=>{
+
+    const id=eventRecipeId(e);
+
+    if(id){
+      ids.add(id);
+    }
+    else if(e.recipe){
+      legacy.add(
+        (e.veg||'')+'|'+e.recipe
+      );
+    }
+
+  });
+
+  return ids.size+legacy.size;
+}
+
+
+// ----------------------------------------
+// 調理したレシピ種類数
+// ----------------------------------------
+
+function uniqueCookRecipes(){
+
+  const ids=new Set();
+  const legacy=new Set();
+
+  cookEvents().forEach(e=>{
+
+    const id=eventRecipeId(e);
+
+    if(id){
+      ids.add(id);
+    }
+    else if(e.recipe){
+      legacy.add(
+        (e.veg||'')+'|'+e.recipe
+      );
+    }
+
+  });
+
+  return ids.size+legacy.size;
+}
+
+
+// ----------------------------------------
+// 実践日数
+// 食べた／作った日のユニーク日数
+// ----------------------------------------
+
+function challengeDayCount(){
+
+  return new Set(
+    events
+      .filter(e=>
+        [
+          'ate',
+          'selfMade',
+          'togetherMade',
+          'made'
+        ].includes(e.type)
+      )
+      .map(e=>ymdFromTs(e.ts))
+  ).size;
+}
+
+
+// ========================================
+// 「まなぶ」解放
+//
+// 同じ料理を何度食べても記録は残す。
+// ただし学習解放は
+// 「食べたレシピの種類数」で判定する。
+// ========================================
+
+function unlockedStage(){
+
+  const count=uniqueAteRecipes();
+
+  let n=0;
+
+  thresholds.forEach((t,i)=>{
+    if(count>=t){
+      n=i;
+    }
+  });
+
+  return n;
+}
 function head(t,s=''){return `<div class=top><div><div class=brand>${t}</div><div class=sub>${s}</div></div><span>🍂</span></div>`}
 function setup(){app.innerHTML=head('朝食やさいチャレンジ','はじめに学年をえらんでね')+`<div class=card><h2>あなたは何年生？</h2><p>学年に合わせて「まなぶ」と確認クイズが変わります。</p><div class=gradegrid>${[1,2,3,4,5,6].map(g=>`<button onclick=chooseGrade(${g})><b>${g}</b>年生</button>`).join('')}</div><p class=note>1・2年生＝低学年、3・4年生＝中学年、5・6年生＝高学年として内容を切り替えます。</p></div>`;nav.innerHTML=''}
 function chooseGrade(g){profile={id:'local-'+Date.now(),grade:g,band:bandOf(g),version:'autumn-winter-v7'};save('profile',profile);log('grade_selected');page='home';render()}
 function home(){
 
   let c=ateCount();
-  let u=uniqueVeg();
-  let stage=unlockedStage();
-  let next=thresholds.find(t=>t>c);
+let u=uniqueVeg();
+let recipeKinds=uniqueAteRecipes();
+let stage=unlockedStage();
+let next=thresholds.find(t=>t>recipeKinds);
 
   let msg='';
 
   if(next){
 
     if(profile.grade===1){
-      msg=`あと ${next-c}かい たべると、つぎの「まなぶ」が ひらくよ！`;
+      msg=`あと ${next-recipeKinds}かい たべると、つぎの「まなぶ」が ひらくよ！`;
     }
     else if(profile.grade===2){
-      msg=`あと ${next-c}回 食べると、次の「まなぶ」が ひらくよ！`;
+      msg=`あと ${next-recipeKinds}回 食べると、次の「まなぶ」が ひらくよ！`;
     }
     else{
-      msg=`あと ${next-c} 回食べると、次の「まなぶ」がひらくよ！`;
+      msg=`あと ${next-recipeKinds} 回食べると、次の「まなぶ」がひらくよ！`;
     }
 
   }else{
@@ -464,7 +615,7 @@ function home(){
       🌱 <b>${msg}</b>
 
       <div class=progress>
-        <i style="width:${Math.min(100,c/10*100)}%"></i>
+        <i style="width:${Math.min(100,recipeKinds/10*100)}%"></i>
       </div>
 
     </div>
@@ -691,11 +842,33 @@ function recipe(){
 }
 function mark(t){
 
+  const now=Date.now();
+
+  // 同じレシピ・同じ行動を
+  // 5秒以内に再度押した場合だけ誤操作として防止
+  const duplicate=events
+    .slice()
+    .reverse()
+    .find(e=>
+      e.type===t &&
+      eventRecipeId(e)===(recipeSel.recipe_id||'')
+    );
+
+  if(
+    duplicate &&
+    now-duplicate.ts<5000
+  ){
+    alert('この記録は、いま登録したばかりです。');
+    return;
+  }
+
+
   log(t,{
-  recipe_id:recipeSel.recipe_id||'',
-  veg:recipeSel.veg,
-  recipe:recipeSel.name
-});
+    recipe_id:recipeSel.recipe_id||'',
+    veg:recipeSel.veg,
+    recipe:recipeSel.name
+  });
+
 
   if(t==='selfMade'){
     alert('「自分で作った」を記録しました。');
@@ -706,7 +879,7 @@ function mark(t){
   }
 
   if(t==='ate'){
-    alert('「食べた」を記録しました。まなぶのページも見てみよう！');
+    alert('「食べた」を記録しました。');
   }
 
   render();
@@ -722,7 +895,7 @@ function quizOpportunityState(){
   return {n,available,next:QUIZ_MILESTONES.find(m=>n<m)};
 }
 function quizPrompt(){let qs=quizOpportunityState();if(!qs.available.length)return '';let m=qs.available[0];return `<div class="card quizPrompt"><b>📝 学んだことをクイズでたしかめてみる？</b><p>${m}つの「まなぶ」が終わりました。これまで学んだ内容だけから問題が出ます。</p><button class=primary onclick="openQuizChoice(${m})">クイズをえらぶ</button><p class=note>今はやらなくても大丈夫。あとからいつでも挑戦できます。</p></div>`}
-function learn(){let u=unlockedStage(), bank=lessonBank(),qs=quizOpportunityState();app.innerHTML=head('まなぶ',`${profile.grade}年生に合わせた内容です`)+`<div class=card><b>まず学ぶ。クイズはあとで、自分で選んで挑戦。</b><p class=note>クイズは複数の学習を終えた後に表示され、未学習の内容からは出題しません。</p></div>${quizPrompt()}<div class=timeline>${bank.map((L,i)=>{let open=i<=u,done=learnDone.includes(profile.band+'-'+i);return `<div class="stage ${open?'open':'closed'}"><b>${open?'🔓':'🔒'} ${i+1}. ${L.title}${done?' ✓学習':''}</b><span class=note>${i===0?'最初からOPEN':`${thresholds[i]}回食べるとOPEN`}</span>${open?`<button class=secondary onclick="openLesson(${i})">${done?'もう一度見る':'学んでみる'}</button>`:''}</div>`}).join('')}</div>${qs.next?`<p class=note>次のクイズ選択は「まなぶ」を${qs.next}つ完了すると表示されます。</p>`:''}`}
+function learn(){let u=unlockedStage(), bank=lessonBank(),qs=quizOpportunityState();app.innerHTML=head('まなぶ',`${profile.grade}年生に合わせた内容です`)+`<div class=card><b>まず学ぶ。クイズはあとで、自分で選んで挑戦。</b><p class=note>クイズは複数の学習を終えた後に表示され、未学習の内容からは出題しません。</p></div>${quizPrompt()}<div class=timeline>${bank.map((L,i)=>{let open=i<=u,done=learnDone.includes(profile.band+'-'+i);return `<div class="stage ${open?'open':'closed'}"><b>${open?'🔓':'🔒'} ${i+1}. ${L.title}${done?' ✓学習':''}</b><span class=note>${i===0?'最初からOPEN':`${thresholds[i]}種類の料理を食べるとOPEN`}</span>${open?`<button class=secondary onclick="openLesson(${i})">${done?'もう一度見る':'学んでみる'}</button>`:''}</div>`}).join('')}</div>${qs.next?`<p class=note>次のクイズ選択は「まなぶ」を${qs.next}つ完了すると表示されます。</p>`:''}`}
 function openLesson(i){
   lessonSel=i;
   const L=lessonBank()[i];
@@ -1299,7 +1472,16 @@ function record(){
   let monthLearn=
     me.filter(e=>e.type==='lesson_complete').length;
 
+// ---------- 行動の広がり・継続 ----------
+let allAteRecipeKinds=
+  uniqueAteRecipes();
 
+let allCookRecipeKinds=
+  uniqueCookRecipes();
+
+let allChallengeDays=
+  challengeDayCount();
+  
   // ---------- これまでの調理記録 ----------
   let allSelfMade=
     events.filter(e=>e.type==='selfMade').length;
@@ -1469,37 +1651,52 @@ function record(){
 
      <div class=stats>
 
-       <div class=card>
-         <b>${allSelfMade}</b>
-         <span class=note>自分で作った</span>
-       </div>
+  <div class=card>
+    <b>${ateCount()}</b>
+    <span class=note>食べた回数</span>
+  </div>
 
-       <div class=card>
-         <b>${allTogetherMade}</b>
-         <span class=note>いっしょに作った</span>
-       </div>
+  <div class=card>
+    <b>${allAteRecipeKinds}</b>
+    <span class=note>食べた料理の種類</span>
+  </div>
 
-       <div class=card>
-         <b>${allCook}</b>
-         <span class=note>調理した</span>
-       </div>
+  <div class=card>
+    <b>${uniqueVeg()}</b>
+    <span class=note>食べた野菜の種類</span>
+  </div>
 
-       <div class=card>
-         <b>${ateCount()}</b>
-         <span class=note>食べた</span>
-       </div>
+  <div class=card>
+    <b>${allChallengeDays}</b>
+    <span class=note>チャレンジした日</span>
+  </div>
 
-       <div class=card>
-         <b>${uniqueVeg()}</b>
-         <span class=note>野菜の種類</span>
-       </div>
+  <div class=card>
+    <b>${allSelfMade}</b>
+    <span class=note>自分で作った回数</span>
+  </div>
 
-       <div class=card>
-         <b>${learnDone.length}</b>
-         <span class=note>学習完了</span>
-       </div>
+  <div class=card>
+    <b>${allTogetherMade}</b>
+    <span class=note>いっしょに作った回数</span>
+  </div>
 
-     </div>
+  <div class=card>
+    <b>${allCook}</b>
+    <span class=note>調理した回数</span>
+  </div>
+
+  <div class=card>
+    <b>${allCookRecipeKinds}</b>
+    <span class=note>調理した料理の種類</span>
+  </div>
+
+  <div class=card>
+    <b>${learnDone.length}</b>
+    <span class=note>学習完了</span>
+  </div>
+
+</div>
 
      <div class=card>
        <ul class=history>
