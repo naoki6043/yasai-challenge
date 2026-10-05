@@ -412,7 +412,12 @@ vegKinds:{
   2:'やさいの しゅるい',
   3:'野菜の種類'
 },
-
+recipeKinds:{
+  1:'たべた りょうり',
+  2:'食べた りょうり',
+  3:'食べた料理'
+},
+    
     learnStatus:{
       1:'まなぶ',
       2:'まなぶ',
@@ -709,15 +714,15 @@ let next=thresholds.find(t=>t>recipeKinds);
 
   if(next){
 
-    if(profile.grade===1){
-      msg=`あと ${next-recipeKinds}かい たべると、つぎの「まなぶ」が ひらくよ！`;
-    }
-    else if(profile.grade===2){
-      msg=`あと ${next-recipeKinds}回 食べると、次の「まなぶ」が ひらくよ！`;
-    }
-    else{
-      msg=`あと ${next-recipeKinds} 回食べると、次の「まなぶ」がひらくよ！`;
-    }
+   if(profile.grade===1){
+  msg=`あと ${next-recipeKinds}しゅるい、べつの りょうりを たべると、つぎの「まなぶ」が ひらくよ！`;
+}
+else if(profile.grade===2){
+  msg=`あと ${next-recipeKinds}しゅるい、べつの料理を 食べると、次の「まなぶ」が ひらくよ！`;
+}
+else{
+  msg=`あと ${next-recipeKinds}種類、別の料理を食べると、次の「まなぶ」がひらくよ！`;
+}
 
   }else{
 
@@ -748,28 +753,28 @@ let next=thresholds.find(t=>t>recipeKinds);
 
     <div class=stats>
 
-      <div class=card>
-        <b>${c}</b>
-        <span class=note>
-          ${gradeText('ateCount')}
-        </span>
-      </div>
+  <div class=card>
+    <b>${c}</b>
+    <span class=note>
+      ${gradeText('ateCount')}
+    </span>
+  </div>
 
-      <div class=card>
-        <b>${u}</b>
-        <span class=note>
-          ${gradeText('vegKinds')}
-        </span>
-      </div>
+  <div class=card>
+    <b>${recipeKinds}</b>
+    <span class=note>
+      ${gradeText('recipeKinds')}
+    </span>
+  </div>
 
-      <div class=card>
-        <b>${stage+1}</b>
-        <span class=note>
-          ${gradeText('learnStatus')}
-        </span>
-      </div>
+  <div class=card>
+    <b>${stage+1}/6</b>
+<span class=note>
+  ${gradeText('learnStatus')}
+</span>
+  </div>
 
-    </div>
+</div>
 
     <div class=unlock>
 
