@@ -254,7 +254,6 @@ function recipeStatus(veg,name){
     )
   };
 }
-}
 function homeRecipeRow(v){
 
   return `
@@ -825,7 +824,7 @@ function calendarHTML(d){
    let active=icons.length?' active':'';
    cells.push(`<button class="calCell${active}" onclick="showDay('${ds}')"><b>${day}</b><span>${icons.join('')}</span></button>`);
  }
- return `<div class=calendarCard><div class=calHead><button onclick="moveMonth(-1)">‹</button><b>${y}年 ${m+1}月</b><button onclick="moveMonth(1)">›</button></div><div class=calWeek><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div><div class=calGrid>${cells.join('')}</div><div class=calLegend><span>🍳 作った</span><span>🥕 食べた</span><span>📖 学んだ</span><span>✓ クイズ</span></div></div>`
+ return `<div class=calendarCard><div class=calHead><button onclick="moveMonth(-1)">‹</button><b>${y}年 ${m+1}月</b><button onclick="moveMonth(1)">›</button></div><div class=calWeek><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div><div class=calGrid>${cells.join('')}</div><div class=calLegend><span>👩‍🍳 自分で作った</span><span>👪 いっしょに作った</span><span>🥕 食べた</span><span>📖 学んだ</span><span>✓ クイズ</span></div>`
 }
 function moveMonth(n){calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+n,1);record()}
 function showDay(ds){
