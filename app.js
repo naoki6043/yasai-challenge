@@ -761,11 +761,11 @@ else{
   </div>
 
   <div class=card>
-    <b>${recipeKinds}</b>
-    <span class=note>
-      ${gradeText('recipeKinds')}
-    </span>
-  </div>
+  <b>${recipeKinds}</b>
+  <span class=note>
+    TEST 食べた料理
+  </span>
+</div>
 
   <div class=card>
     <b>${stage+1}/6</b>
