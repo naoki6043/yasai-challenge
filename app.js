@@ -186,42 +186,203 @@ function currentVegetables(){
   return vegetables;
 }
 function recipePhoto(name){
-  const id=recipeIds[name]||'';
-  const r=remoteById(id)||remoteByName(name);
 
-  if(r&&r['完成写真URL']){
+  let id=recipeIds[name]||'';
+
+  // 詳細画面ではrecipeSelのIDを優先
+  if(
+    recipeSel &&
+    recipeSel.recipe_id
+  ){
+    id=recipeSel.recipe_id;
+  }
+
+  const r=
+    remoteById(id) ||
+    remoteByName(name);
+
+
+  if(r && r['完成写真URL']){
     return r['完成写真URL'];
   }
 
-  if(r&&r['完成写真ファイル名']){
+
+  if(r && r['完成写真ファイル名']){
     return 'images/'+r['完成写真ファイル名'];
   }
 
+
+  // 移行期間中の旧画像
   return recipeImages[name]||'';
 }
 function recipeDetailHTML(name){
-  const id=recipeIds[name]||'';
-  const r=remoteById(id)||remoteByName(name);
+
+  // 固定名からrecipe_idを探す
+  let id=recipeIds[name]||'';
+
+  // 詳細画面から来た場合はrecipeSelのIDを優先
+  if(
+    recipeSel &&
+    recipeSel.recipe_id
+  ){
+    id=recipeSel.recipe_id;
+  }
+
+  const r=
+    remoteById(id) ||
+    remoteByName(name);
 
   if(!r){
-    return '<p>デモ版のため、材料・作り方は未登録です。</p>';
-  } '<p>デモ版のため、材料・作り方は未登録です。</p>';let mats=[],steps=[];for(let i=1;i<=8;i++)if(r['材料'+i])mats.push(`<li>${r['材料'+i]}${r['分量'+i]?'　'+r['分量'+i]:''}</li>`);for(let i=1;i<=6;i++)if(r['作り方'+i])steps.push(`<li>${r['作り方'+i]}</li>`);return `${mats.length?`<h3>材料${r['何人分']?'（'+r['何人分']+'人分）':''}</h3><ul>${mats.join('')}</ul>`:''}${steps.length?`<h3>作り方</h3><ol>${steps.join('')}</ol>`:''}${r['調理ポイント']?`<div class=lessonBox><strong>ポイント</strong><p>${r['調理ポイント']}</p></div>`:''}${r['大人と一緒に行う工程']?`<div class=lessonBox><strong>安全に作ろう</strong><p>${r['大人と一緒に行う工程']}</p></div>`:''}`}
-
-const QUIZ_MILESTONES=[2,4,6];
-const bandOf=g=>g<=2?'low':g<=4?'mid':'high'; const bandName={low:'低学年',mid:'中学年',high:'高学年'};
-// 学年に合わせた表示
-function appTitle(){
-  if(!profile) return '朝食やさいチャレンジ';
-
-  if(profile.grade===1){
-    return 'あさごはん やさいチャレンジ';
+    return `
+      <p class="note">
+        このレシピの材料・作り方は現在準備中です。
+      </p>
+    `;
   }
 
-  if(profile.grade===2){
-    return '朝ごはん やさいチャレンジ';
+
+  // -----------------------------
+  // 材料
+  // -----------------------------
+
+  const mats=[];
+
+  for(let i=1;i<=8;i++){
+
+    const ingredient=
+      String(r['材料'+i]||'').trim();
+
+    const amount=
+      String(r['分量'+i]||'').trim();
+
+    if(ingredient){
+
+      mats.push(`
+        <li>
+          <span>${ingredient}</span>
+          ${amount
+            ? `<strong>${amount}</strong>`
+            : ''
+          }
+        </li>
+      `);
+    }
   }
 
-  return '朝食やさいチャレンジ';
+
+  // -----------------------------
+  // 作り方
+  // -----------------------------
+
+  const steps=[];
+
+  for(let i=1;i<=6;i++){
+
+    const step=
+      String(r['作り方'+i]||'').trim();
+
+    if(step){
+      steps.push(`<li>${step}</li>`);
+    }
+  }
+
+
+  // -----------------------------
+  // 人数表示
+  // -----------------------------
+
+  const servings=
+    String(r['何人分']||'').trim();
+
+  let servingsText='';
+
+  if(servings){
+
+    // 「2」と入力されていても
+    // 「2人分」と入力されていても対応
+    servingsText=
+      servings.includes('人')
+        ? `（${servings}）`
+        : `（${servings}人分）`;
+  }
+
+
+  // -----------------------------
+  // 調理時間
+  // -----------------------------
+
+  const cookingTime=
+    String(r['調理時間(分)']||'').trim();
+
+
+  // -----------------------------
+  // HTML
+  // -----------------------------
+
+  return `
+
+    ${cookingTime
+      ? `
+        <div class="recipeMeta">
+          ⏱ 調理時間の目安：${cookingTime}分
+        </div>
+      `
+      : ''
+    }
+
+    ${mats.length
+      ? `
+        <h3>材料${servingsText}</h3>
+
+        <ul class="ingredientList">
+          ${mats.join('')}
+        </ul>
+      `
+      : ''
+    }
+
+    ${steps.length
+      ? `
+        <h3>作り方</h3>
+
+        <ol class="recipeSteps">
+          ${steps.join('')}
+        </ol>
+      `
+      : ''
+    }
+
+    ${r['調理ポイント']
+      ? `
+        <div class="lessonBox">
+          <strong>調理のポイント</strong>
+          <p>${r['調理ポイント']}</p>
+        </div>
+      `
+      : ''
+    }
+
+    ${r['子どもへの一言']
+      ? `
+        <div class="lessonBox">
+          <strong>やってみよう</strong>
+          <p>${r['子どもへの一言']}</p>
+        </div>
+      `
+      : ''
+    }
+
+    ${r['大人と一緒に行う工程']
+      ? `
+        <div class="lessonBox">
+          <strong>安全に作ろう</strong>
+          <p>${r['大人と一緒に行う工程']}</p>
+        </div>
+      `
+      : ''
+    }
+
+  `;
 }
 // 実学年に合わせた子ども向け表示
 function gradeText(key){
@@ -724,10 +885,17 @@ function homeRecipeRow(v){
 
               ${
                 recipePhoto(name)
-                ? `<img
-                     class=recipePhoto
-                     src="${recipePhoto(name)}"
-                     alt="${displayName}"
+                ? `${
+  recipePhoto(name)
+    ? `<img
+         class="recipePhoto"
+         src="${recipePhoto(name)}"
+         alt="${displayName}">
+      `
+    : `<div class="photoPlaceholder">
+         ${v[1]}
+       </div>`
+}
                   `
                 : `<div class=photoPlaceholder>
                      ${v[1]}
@@ -782,6 +950,17 @@ function openRecipeHome(vegName,i){
 }
 function recipe(){
 
+  const remote=
+    remoteById(recipeSel.recipe_id);
+
+  const displayName=
+    remote?.['料理名'] ||
+    recipeSel.name;
+
+  const displayVeg=
+    remote?.['野菜名'] ||
+    recipeSel.veg;
+
   let g={
     low:'おうちの人といっしょに、できることを見つけよう。',
     mid:'できるところは自分で。包丁や火はおうちの人と安全を確認しよう。',
@@ -791,16 +970,21 @@ function recipe(){
   app.innerHTML=`
     <button class=back onclick="go('home')">‹ ホームにもどる</button>
 
-    ${head(recipeSel.name,recipeSel.veg)}
+   ${head(displayName,displayVeg)}
 
     ${recipePhoto(recipeSel.name)
-      ?`<div class=card>
-          <img class=detailRecipePhoto
-               src="${recipePhoto(recipeSel.name)}"
-               alt="${recipeSel.name}">
-        </div>`
-      :''
-    }
+  ? `
+      <div class="card recipePhotoCard">
+
+        <img
+          class="detailRecipePhoto"
+          src="${recipePhoto(recipeSel.name)}"
+          alt="${displayName}">
+
+      </div>
+    `
+  : ''
+}
 
     <div class=card>
       <div class=lessonBox>
