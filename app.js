@@ -926,15 +926,320 @@ function showDay(ds){
     });
 }
 function record(){
- let starts=events.filter(e=>e.type==='learning_quiz_start').length, completes=events.filter(e=>e.type==='learning_quiz_complete').length, answers=events.filter(e=>e.type==='learning_quiz_answer'), correct=answers.filter(e=>e.correct).length, opportunities=QUIZ_MILESTONES.filter(m=>completedLessonIndices().length>=m).length;
- let startRate=opportunities?Math.round(starts/opportunities*100):0,completeRate=opportunities?Math.round(completes/opportunities*100):0,acc=answers.length?Math.round(correct/answers.length*100):0;
- let me=monthEvents(calendarCursor), challengeDays=new Set(me.filter(e=>['made','ate','lesson_complete','learning_quiz_complete'].includes(e.type)).map(e=>ymdFromTs(e.ts))).size, monthAte=me.filter(e=>e.type==='ate'), monthVeg=new Set(monthAte.map(e=>e.veg)).size, monthMade=me.filter(e=>e.type==='made').length, monthLearn=me.filter(e=>e.type==='lesson_complete').length;
- let history=events.filter(e=>['made','ate','lesson_complete','learning_quiz_complete'].includes(e.type)).slice().reverse().slice(0,12).map(e=>{let d=new Date(e.ts).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'});if(e.type==='made')return `<li><span>${d}</span> 🍳 ${e.veg}「${e.recipe}」を作った</li>`;if(e.type==='ate')return `<li><span>${d}</span> 🥕 ${e.veg}「${e.recipe}」を食べた</li>`;if(e.type==='lesson_complete')return `<li><span>${d}</span> 📖 ${e.title}を学んだ</li>`;return `<li><span>${d}</span> ✓ クイズ ${e.score}/${e.total}問</li>`}).join('')||'<li>まだ記録はありません。</li>';
- app.innerHTML=head('きろく','チャレンジをふり返ろう')+
- `<h2>カレンダー</h2>${calendarHTML(calendarCursor)}<div id=dayDetail class="card dayDetail"><p class=note>日にちをタップすると、その日の記録が見られます。</p></div>`+
- `<h2>今月のまとめ</h2><div class=monthStats><div class=card><b>${challengeDays}</b><span>チャレンジした日</span></div><div class=card><b>${monthAte.length}</b><span>食べた回数</span></div><div class=card><b>${monthVeg}</b><span>野菜の種類</span></div><div class=card><b>${monthLearn}</b><span>学んだ数</span></div></div>`+
- `<h2>これまでの記録</h2><div class=stats><div class=card><b>${ateCount()}</b><span class=note>食べた</span></div><div class=card><b>${uniqueVeg()}</b><span class=note>種類</span></div><div class=card><b>${learnDone.length}</b><span class=note>学習完了</span></div></div><div class=card><ul class=history>${history}</ul></div>`+
- `<h2>学習・クイズ記録</h2><div class=card><p>クイズ提示機会：${opportunities}回 ／ 開始：${starts}回 ／ 完了：${completes}回</p><p>開始率：${startRate}%　完了率：${completeRate}%</p><p>回答：${answers.length}問　正答率：${acc}%</p><p class=note>クイズを実施しなかった場合も提示機会として記録します。</p></div>`
+
+  // ---------- クイズ記録 ----------
+  let starts=
+    events.filter(e=>e.type==='learning_quiz_start').length;
+
+  let completes=
+    events.filter(e=>e.type==='learning_quiz_complete').length;
+
+  let answers=
+    events.filter(e=>e.type==='learning_quiz_answer');
+
+  let correct=
+    answers.filter(e=>e.correct).length;
+
+  let opportunities=
+    QUIZ_MILESTONES.filter(
+      m=>completedLessonIndices().length>=m
+    ).length;
+
+  let startRate=
+    opportunities
+      ? Math.round(starts/opportunities*100)
+      : 0;
+
+  let completeRate=
+    opportunities
+      ? Math.round(completes/opportunities*100)
+      : 0;
+
+  let acc=
+    answers.length
+      ? Math.round(correct/answers.length*100)
+      : 0;
+
+
+  // ---------- 今月の記録 ----------
+  let me=monthEvents(calendarCursor);
+
+  let challengeDays=
+    new Set(
+      me
+        .filter(e=>
+          [
+            'selfMade',
+            'togetherMade',
+            'made',
+            'ate',
+            'lesson_complete',
+            'learning_quiz_complete'
+          ].includes(e.type)
+        )
+        .map(e=>ymdFromTs(e.ts))
+    ).size;
+
+  let monthAte=
+    me.filter(e=>e.type==='ate');
+
+  let monthVeg=
+    new Set(
+      monthAte.map(e=>e.veg)
+    ).size;
+
+  let monthSelfMade=
+    me.filter(e=>e.type==='selfMade').length;
+
+  let monthTogetherMade=
+    me.filter(e=>e.type==='togetherMade').length;
+
+  // 以前の「作った」記録
+  let monthOldMade=
+    me.filter(e=>e.type==='made').length;
+
+  let monthCook=
+    monthSelfMade+
+    monthTogetherMade+
+    monthOldMade;
+
+  let monthLearn=
+    me.filter(e=>e.type==='lesson_complete').length;
+
+
+  // ---------- これまでの調理記録 ----------
+  let allSelfMade=
+    events.filter(e=>e.type==='selfMade').length;
+
+  let allTogetherMade=
+    events.filter(e=>e.type==='togetherMade').length;
+
+  let allOldMade=
+    events.filter(e=>e.type==='made').length;
+
+  let allCook=
+    allSelfMade+
+    allTogetherMade+
+    allOldMade;
+
+
+  // ---------- 最近の記録 ----------
+  let history=
+    events
+      .filter(e=>
+        [
+          'selfMade',
+          'togetherMade',
+          'made',
+          'ate',
+          'lesson_complete',
+          'learning_quiz_complete'
+        ].includes(e.type)
+      )
+      .slice()
+      .reverse()
+      .slice(0,12)
+      .map(e=>{
+
+        let d=
+          new Date(e.ts)
+            .toLocaleDateString(
+              'ja-JP',
+              {
+                month:'numeric',
+                day:'numeric'
+              }
+            );
+
+        if(e.type==='selfMade'){
+          return `
+            <li>
+              <span>${d}</span>
+              👩‍🍳 ${e.veg}「${e.recipe}」を自分で作った
+            </li>
+          `;
+        }
+
+        if(e.type==='togetherMade'){
+          return `
+            <li>
+              <span>${d}</span>
+              👪 ${e.veg}「${e.recipe}」をいっしょに作った
+            </li>
+          `;
+        }
+
+        if(e.type==='made'){
+          return `
+            <li>
+              <span>${d}</span>
+              🍳 ${e.veg}「${e.recipe}」を作った（旧記録）
+            </li>
+          `;
+        }
+
+        if(e.type==='ate'){
+          return `
+            <li>
+              <span>${d}</span>
+              🥕 ${e.veg}「${e.recipe}」を食べた
+            </li>
+          `;
+        }
+
+        if(e.type==='lesson_complete'){
+          return `
+            <li>
+              <span>${d}</span>
+              📖 ${e.title}を学んだ
+            </li>
+          `;
+        }
+
+        if(e.type==='learning_quiz_complete'){
+          return `
+            <li>
+              <span>${d}</span>
+              ✓ クイズ ${e.score}/${e.total}問
+            </li>
+          `;
+        }
+
+        return '';
+
+      })
+      .join('')
+      ||
+      '<li>まだ記録はありません。</li>';
+
+
+  // ---------- 画面表示 ----------
+  app.innerHTML=
+    head(
+      'きろく',
+      'チャレンジをふり返ろう'
+    )+
+
+    `<h2>カレンダー</h2>
+
+     ${calendarHTML(calendarCursor)}
+
+     <div
+       id=dayDetail
+       class="card dayDetail">
+
+       <p class=note>
+         日にちをタップすると、その日の記録が見られます。
+       </p>
+
+     </div>`+
+
+
+    `<h2>今月のまとめ</h2>
+
+     <div class=monthStats>
+
+       <div class=card>
+         <b>${challengeDays}</b>
+         <span>チャレンジした日</span>
+       </div>
+
+       <div class=card>
+         <b>${monthSelfMade}</b>
+         <span>自分で作った</span>
+       </div>
+
+       <div class=card>
+         <b>${monthTogetherMade}</b>
+         <span>いっしょに作った</span>
+       </div>
+
+       <div class=card>
+         <b>${monthAte.length}</b>
+         <span>食べた回数</span>
+       </div>
+
+       <div class=card>
+         <b>${monthVeg}</b>
+         <span>野菜の種類</span>
+       </div>
+
+       <div class=card>
+         <b>${monthLearn}</b>
+         <span>学んだ数</span>
+       </div>
+
+     </div>`+
+
+
+    `<h2>これまでの記録</h2>
+
+     <div class=stats>
+
+       <div class=card>
+         <b>${allSelfMade}</b>
+         <span class=note>自分で作った</span>
+       </div>
+
+       <div class=card>
+         <b>${allTogetherMade}</b>
+         <span class=note>いっしょに作った</span>
+       </div>
+
+       <div class=card>
+         <b>${allCook}</b>
+         <span class=note>調理した</span>
+       </div>
+
+       <div class=card>
+         <b>${ateCount()}</b>
+         <span class=note>食べた</span>
+       </div>
+
+       <div class=card>
+         <b>${uniqueVeg()}</b>
+         <span class=note>野菜の種類</span>
+       </div>
+
+       <div class=card>
+         <b>${learnDone.length}</b>
+         <span class=note>学習完了</span>
+       </div>
+
+     </div>
+
+     <div class=card>
+       <ul class=history>
+         ${history}
+       </ul>
+     </div>`+
+
+
+    `<h2>学習・クイズ記録</h2>
+
+     <div class=card>
+
+       <p>
+         クイズ提示機会：${opportunities}回 ／
+         開始：${starts}回 ／
+         完了：${completes}回
+       </p>
+
+       <p>
+         開始率：${startRate}%　
+         完了率：${completeRate}%
+       </p>
+
+       <p>
+         回答：${answers.length}問　
+         正答率：${acc}%
+       </p>
+
+       <p class=note>
+         クイズを実施しなかった場合も提示機会として記録します。
+       </p>
+
+     </div>`;
 }
 function notice(){
 
