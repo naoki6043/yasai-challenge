@@ -102,6 +102,12 @@ function remoteById(id){
     r=>String(r['recipe_id']||'').trim()===String(id||'').trim()
   );
 }
+function recipeDisplayName(name){
+  const id=recipeIds[name]||'';
+  const r=remoteById(id);
+
+  return r?.['料理名'] || name;
+}
 function bandLabel(band){
   return {
     low:'低学年',
@@ -518,9 +524,10 @@ function homeRecipeRow(v){
 
       <div class=threeRecipes>
 
-        ${v[2].map((name,i)=>{
+       ${v[2].map((name,i)=>{
 
-          let st=recipeStatus(v[0],name);
+  const displayName=recipeDisplayName(name);
+  let st=recipeStatus(v[0],name);
 
           let cookText='';
           let cookOn=false;
@@ -557,14 +564,14 @@ function homeRecipeRow(v){
                 ? `<img
                      class=recipePhoto
                      src="${recipePhoto(name)}"
-                     alt="${name}">
+                     alt="${displayName}"
                   `
                 : `<div class=photoPlaceholder>
                      ${v[1]}
                    </div>`
               }
 
-              <b>${name}</b>
+              <b>${displayName}</b>
 
               <div class=checks>
 
