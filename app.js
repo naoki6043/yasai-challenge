@@ -179,6 +179,20 @@ function recipeDetailHTML(name){let r=remoteByName(name);if(!r)return '<p>デモ
 
 const QUIZ_MILESTONES=[2,4,6];
 const bandOf=g=>g<=2?'low':g<=4?'mid':'high'; const bandName={low:'低学年',mid:'中学年',high:'高学年'};
+// 学年に合わせた表示
+function appTitle(){
+  if(!profile) return '朝食やさいチャレンジ';
+
+  if(profile.grade===1){
+    return 'あさごはん やさいチャレンジ';
+  }
+
+  if(profile.grade===2){
+    return '朝ごはん やさいチャレンジ';
+  }
+
+  return '朝食やさいチャレンジ';
+}
 const vegetables=[
 ['小松菜','🥬',['小松菜お浸し','小松菜アーモンドフィッシュ炒め','小松菜クリーム煮']],
 ['ほうれん草','🌿',['ほうれん草ショウガお浸し','ほうれん草エノキサラダ','ほうれん草ベーコンバター炒め']],
@@ -222,9 +236,9 @@ function log(type,data={}){events.push({type,ts:Date.now(),date:new Date().toLoc
 const ateEvents=()=>events.filter(e=>e.type==='ate'); const ateCount=()=>ateEvents().length; const uniqueVeg=()=>new Set(ateEvents().map(e=>e.veg)).size;
 function unlockedStage(){let c=ateCount(),n=0; thresholds.forEach((t,i)=>{if(c>=t)n=i}); return n}
 function head(t,s=''){return `<div class=top><div><div class=brand>${t}</div><div class=sub>${s}</div></div><span>🍂</span></div>`}
-function setup(){app.innerHTML=head('秋冬やさいチャレンジ','はじめに学年をえらんでね')+`<div class=card><h2>あなたは何年生？</h2><p>学年に合わせて「まなぶ」と確認クイズが変わります。</p><div class=gradegrid>${[1,2,3,4,5,6].map(g=>`<button onclick=chooseGrade(${g})><b>${g}</b>年生</button>`).join('')}</div><p class=note>1・2年生＝低学年、3・4年生＝中学年、5・6年生＝高学年として内容を切り替えます。</p></div>`;nav.innerHTML=''}
+function setup(){app.innerHTML=head('朝食やさいチャレンジ','はじめに学年をえらんでね')+`<div class=card><h2>あなたは何年生？</h2><p>学年に合わせて「まなぶ」と確認クイズが変わります。</p><div class=gradegrid>${[1,2,3,4,5,6].map(g=>`<button onclick=chooseGrade(${g})><b>${g}</b>年生</button>`).join('')}</div><p class=note>1・2年生＝低学年、3・4年生＝中学年、5・6年生＝高学年として内容を切り替えます。</p></div>`;nav.innerHTML=''}
 function chooseGrade(g){profile={id:'local-'+Date.now(),grade:g,band:bandOf(g),version:'autumn-winter-v7'};save('profile',profile);log('grade_selected');page='home';render()}
-function home(){let c=ateCount(),u=uniqueVeg(),stage=unlockedStage(),next=thresholds.find(t=>t>c);let msg=next?`あと ${next-c} 回食べると、次の「まなぶ」がひらくよ！`:'6つの「まなぶ」がすべて開きました！';app.innerHTML=head('秋冬やさいチャレンジ',`${profile.grade}年生・${bandName[profile.band]}`)+`<div class=hero><b>次はどの野菜にする？</b><p>10種類の野菜から、食べてみたい料理を自分でえらぼう。</p></div><div class=stats><div class=card><b>${c}</b><span class=note>食べた回数</span></div><div class=card><b>${u}</b><span class=note>野菜の種類</span></div><div class=card><b>${stage+1}</b><span class=note>まなぶ OPEN</span></div></div><div class=unlock>🌱 <b>${msg}</b><div class=progress><i style="width:${Math.min(100,c/10*100)}%"></i></div></div><h2>秋冬の野菜レシピ</h2><div class=homeRows>${currentVegetables().map(homeRecipeRow).join('')}</div>`}
+function home(){let c=ateCount(),u=uniqueVeg(),stage=unlockedStage(),next=thresholds.find(t=>t>c);let msg=next?`あと ${next-c} 回食べると、次の「まなぶ」がひらくよ！`:'6つの「まなぶ」がすべて開きました！';app.innerHTML=head(appTitle(),`${profile.grade}年生・${bandName[profile.band]}`)+`<div class=hero><b>次はどの野菜にする？</b><p>10種類の野菜から、食べてみたい料理を自分でえらぼう。</p></div><div class=stats><div class=card><b>${c}</b><span class=note>食べた回数</span></div><div class=card><b>${u}</b><span class=note>野菜の種類</span></div><div class=card><b>${stage+1}</b><span class=note>まなぶ OPEN</span></div></div><div class=unlock>🌱 <b>${msg}</b><div class=progress><i style="width:${Math.min(100,c/10*100)}%"></i></div></div><h2>秋冬の野菜レシピ</h2><div class=homeRows>${currentVegetables().map(homeRecipeRow).join('')}</div>`}
 function recipeStatus(veg,name){
 
   const sameRecipe=e=>
