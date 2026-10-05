@@ -797,37 +797,58 @@ function recipeStatus(veg,name){
 
     // 新しい記録はrecipe_idで判定
     if(recipeId && e.recipe_id){
-      return e.recipe_id===recipeId;
+      return String(e.recipe_id)===String(recipeId);
     }
 
-    // 以前の記録にはrecipe_idがないため、
-    // 旧料理名＋野菜名で互換判定
+    // recipe_idがない旧記録との互換
     return (
       e.veg===veg &&
       e.recipe===name
     );
   };
 
-  return {
-    selfMade:events.some(e=>
+
+  const selfMadeCount=
+    events.filter(e=>
       e.type==='selfMade' &&
       sameRecipe(e)
-    ),
+    ).length;
 
-    togetherMade:events.some(e=>
+
+  const togetherMadeCount=
+    events.filter(e=>
       e.type==='togetherMade' &&
       sameRecipe(e)
-    ),
+    ).length;
 
-    oldMade:events.some(e=>
+
+  const oldMadeCount=
+    events.filter(e=>
       e.type==='made' &&
       sameRecipe(e)
-    ),
+    ).length;
 
-    ate:events.some(e=>
+
+  const ateCount=
+    events.filter(e=>
       e.type==='ate' &&
       sameRecipe(e)
-    )
+    ).length;
+
+
+  return {
+
+    selfMadeCount,
+    togetherMadeCount,
+    oldMadeCount,
+    ateCount,
+
+    // 既存処理との互換用
+    selfMade:selfMadeCount>0,
+    togetherMade:togetherMadeCount>0,
+    oldMade:oldMadeCount>0,
+    ate:ateCount>0
+
   };
 }
 function homeRecipeRow(v){
@@ -853,30 +874,66 @@ function homeRecipeRow(v){
   const displayName=recipeDisplayName(name);
   let st=recipeStatus(v[0],name);
 
-          let cookText='';
-          let cookOn=false;
+         let cookText='';
+let cookOn=false;
 
-          if(st.selfMade){
-            cookText=profile.grade===1
-  ? '✓ じぶんで つくった'
-  : '✓ 自分で作った';
-            cookOn=true;
-          }
-          else if(st.togetherMade){
-            cookText=profile.grade===1
-  ? '✓ いっしょに つくった'
-  : '✓ いっしょに作った';
-            cookOn=true;
-          }
-          else if(st.oldMade){
-            cookText='✓ 作った（旧記録）';
-            cookOn=true;
-          }
-          else{
-            cookText=profile.grade===1
-  ? '○ まだ つくっていない'
-  : '○ まだ作っていない';
-          }
+const totalCook=
+  st.selfMadeCount+
+  st.togetherMadeCount+
+  st.oldMadeCount;
+
+
+if(totalCook>0){
+
+  cookOn=true;
+
+  const parts=[];
+
+  if(st.selfMadeCount>0){
+
+    parts.push(
+      profile.grade===1
+        ? `じぶん ${st.selfMadeCount}かい`
+        : `自分 ${st.selfMadeCount}回`
+    );
+
+  }
+
+
+  if(st.togetherMadeCount>0){
+
+    parts.push(
+      profile.grade===1
+        ? `いっしょ ${st.togetherMadeCount}かい`
+        : `いっしょ ${st.togetherMadeCount}回`
+    );
+
+  }
+
+
+  if(st.oldMadeCount>0){
+
+    parts.push(
+      profile.grade===1
+        ? `つくった ${st.oldMadeCount}かい`
+        : `作った ${st.oldMadeCount}回`
+    );
+
+  }
+
+
+  cookText=
+    '✓ '+parts.join('・');
+
+}
+else{
+
+  cookText=
+    profile.grade===1
+      ? '○ まだ つくっていない'
+      : '○ まだ作っていない';
+
+}
 
           return `
             <button
@@ -910,9 +967,25 @@ function homeRecipeRow(v){
                   ${cookText}
                 </span>
 
-                <span class="check ${st.ate?'on':''}">
-                  ${st.ate?'✓':'○'} ${profile.grade===1?'たべた':'食べた'}
-                </span>
+              <span class="check ${st.ateCount>0?'on':''}">
+
+  ${
+    st.ateCount>0
+
+      ? (
+          profile.grade===1
+            ? `✓ たべた ${st.ateCount}かい`
+            : `✓ 食べた ${st.ateCount}回`
+        )
+
+      : (
+          profile.grade===1
+            ? '○ まだ たべていない'
+            : '○ まだ食べていない'
+        )
+  }
+
+</span>
 
               </div>
 
