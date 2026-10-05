@@ -5,7 +5,63 @@ const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch
 let profile=get('profile',null), events=get('events',[]), learnDone=get('learnDone',[]), quizDone=get('quizDone',[]);
 let page=profile?'home':'setup', vegSel=null, recipeSel=null, lessonSel=null, quizIndex=0, quizScore=0, quizQuestions=[], quizOpportunity=null;
 let calendarCursor=new Date();
-const recipeImages={'小松菜お浸し':'images/recipe_01.jpeg'};
+
+const recipeImages={
+  '小松菜お浸し':'images/recipe_01.jpeg'
+};
+
+
+// ========================================
+// 学年・学年区分
+// ========================================
+
+function bandOf(grade){
+
+  if(grade<=2){
+    return 'low';
+  }
+
+  if(grade<=4){
+    return 'mid';
+  }
+
+  return 'high';
+}
+
+
+const bandName={
+  low:'低学年',
+  mid:'中学年',
+  high:'高学年'
+};
+
+
+// ========================================
+// アプリタイトル
+// ========================================
+
+function appTitle(){
+
+  const g=profile?.grade || 1;
+
+  if(g===1){
+    return 'あさごはん やさいチャレンジ';
+  }
+
+  if(g===2){
+    return '朝ごはん やさいチャレンジ';
+  }
+
+  return '朝食やさいチャレンジ';
+}
+
+
+// ========================================
+// クイズ提示タイミング
+// ========================================
+
+const QUIZ_MILESTONES=[2,4,6];
+
 
 let remoteRecipes=[];
 let remoteLessons=[];
@@ -185,17 +241,12 @@ function lessonBank(){
 function currentVegetables(){
   return vegetables;
 }
-function recipePhoto(name){
+function recipePhoto(name, explicitId=''){
 
-  let id=recipeIds[name]||'';
-
-  // 詳細画面ではrecipeSelのIDを優先
-  if(
-    recipeSel &&
-    recipeSel.recipe_id
-  ){
-    id=recipeSel.recipe_id;
-  }
+  const id=
+    explicitId ||
+    recipeIds[name] ||
+    '';
 
   const r=
     remoteById(id) ||
@@ -213,7 +264,7 @@ function recipePhoto(name){
 
 
   // 移行期間中の旧画像
-  return recipeImages[name]||'';
+  return recipeImages[name] || '';
 }
 function recipeDetailHTML(name){
 
@@ -1050,13 +1101,13 @@ function recipe(){
 
    ${head(displayName,displayVeg)}
 
-    ${recipePhoto(recipeSel.name)
+    ${recipePhoto(recipeSel.name, recipeSel.recipe_id)
   ? `
       <div class="card recipePhotoCard">
 
         <img
           class="detailRecipePhoto"
-          src="${recipePhoto(recipeSel.name)}"
+          src="${recipePhoto(recipeSel.name, recipeSel.recipe_id)}"
           alt="${displayName}">
 
       </div>
