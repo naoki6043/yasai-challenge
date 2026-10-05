@@ -97,6 +97,11 @@ function loadPublishedRecipes(){
   });
 }
 function remoteByName(name){return remoteRecipes.find(r=>r['料理名']===name)}
+function remoteById(id){
+  return remoteRecipes.find(
+    r=>String(r['recipe_id']||'').trim()===String(id||'').trim()
+  );
+}
 function bandLabel(band){
   return {
     low:'低学年',
@@ -174,8 +179,27 @@ function lessonBank(){
 function currentVegetables(){
   return vegetables;
 }
-function recipePhoto(name){let r=remoteByName(name);if(r&&r['完成写真URL'])return r['完成写真URL'];if(r&&r['完成写真ファイル名'])return 'images/'+r['完成写真ファイル名'];return recipeImages[name]||''}
-function recipeDetailHTML(name){let r=remoteByName(name);if(!r)return '<p>デモ版のため、材料・作り方は未登録です。</p>';let mats=[],steps=[];for(let i=1;i<=8;i++)if(r['材料'+i])mats.push(`<li>${r['材料'+i]}${r['分量'+i]?'　'+r['分量'+i]:''}</li>`);for(let i=1;i<=6;i++)if(r['作り方'+i])steps.push(`<li>${r['作り方'+i]}</li>`);return `${mats.length?`<h3>材料${r['何人分']?'（'+r['何人分']+'人分）':''}</h3><ul>${mats.join('')}</ul>`:''}${steps.length?`<h3>作り方</h3><ol>${steps.join('')}</ol>`:''}${r['調理ポイント']?`<div class=lessonBox><strong>ポイント</strong><p>${r['調理ポイント']}</p></div>`:''}${r['大人と一緒に行う工程']?`<div class=lessonBox><strong>安全に作ろう</strong><p>${r['大人と一緒に行う工程']}</p></div>`:''}`}
+function recipePhoto(name){
+  const id=recipeIds[name]||'';
+  const r=remoteById(id)||remoteByName(name);
+
+  if(r&&r['完成写真URL']){
+    return r['完成写真URL'];
+  }
+
+  if(r&&r['完成写真ファイル名']){
+    return 'images/'+r['完成写真ファイル名'];
+  }
+
+  return recipeImages[name]||'';
+}
+function recipeDetailHTML(name){
+  const id=recipeIds[name]||'';
+  const r=remoteById(id)||remoteByName(name);
+
+  if(!r){
+    return '<p>デモ版のため、材料・作り方は未登録です。</p>';
+  } '<p>デモ版のため、材料・作り方は未登録です。</p>';let mats=[],steps=[];for(let i=1;i<=8;i++)if(r['材料'+i])mats.push(`<li>${r['材料'+i]}${r['分量'+i]?'　'+r['分量'+i]:''}</li>`);for(let i=1;i<=6;i++)if(r['作り方'+i])steps.push(`<li>${r['作り方'+i]}</li>`);return `${mats.length?`<h3>材料${r['何人分']?'（'+r['何人分']+'人分）':''}</h3><ul>${mats.join('')}</ul>`:''}${steps.length?`<h3>作り方</h3><ol>${steps.join('')}</ol>`:''}${r['調理ポイント']?`<div class=lessonBox><strong>ポイント</strong><p>${r['調理ポイント']}</p></div>`:''}${r['大人と一緒に行う工程']?`<div class=lessonBox><strong>安全に作ろう</strong><p>${r['大人と一緒に行う工程']}</p></div>`:''}`}
 
 const QUIZ_MILESTONES=[2,4,6];
 const bandOf=g=>g<=2?'low':g<=4?'mid':'high'; const bandName={low:'低学年',mid:'中学年',high:'高学年'};
@@ -270,12 +294,53 @@ function vegDisplay(name){
 
   return name;
 }
+const recipeIds={
+  '小松菜お浸し':'R01',
+  '小松菜アーモンドフィッシュ炒め':'R02',
+  '小松菜クリーム煮':'R03',
+
+  'ほうれん草ショウガお浸し':'R04',
+  'ほうれん草エノキサラダ':'R05',
+  'ほうれん草ベーコンバター炒め':'R06',
+
+  'やみつきブロッコリー塩昆布':'R07',
+  'ブロッコリーハムケチャップ炒め':'R08',
+  'ブロッコリーとカニカマのポン酢和え':'R09',
+
+  '塩昆布とカリフラワーの和え物':'R10',
+  'カリフラワーのマスタード和え':'R11',
+  'カリフラワーのオイル焼き':'R12',
+
+  'キャロットラペ':'R13',
+  'にんじんしりしり':'R14',
+  'にんじんもやしナムル':'R15',
+
+  '大根ツナポン':'R16',
+  '大根みそ':'R17',
+  '大根明太マヨ':'R18',
+
+  '白菜の和風おかか和え':'R19',
+  '白菜とベーコンのミルフィーユ蒸し':'R20',
+  '白菜のツナチーズ焼き':'R21',
+
+  '青梗菜のしらす和え':'R22',
+  '青梗菜中華胡麻和え':'R23',
+  '青梗菜とちくわのごま和え':'R24',
+
+  'かぶとツナの和え物':'R25',
+  'かぶの味噌田楽':'R26',
+  'かぶとベーコンのチーズ炒め':'R27',
+
+  'きんぴらごぼう':'R28',
+  'ごぼうと卵の炒め物':'R29',
+  'ごぼうとアーモンドの甘辛炒め':'R30'
+};
 const vegetables=[
 ['小松菜','🥬',['小松菜お浸し','小松菜アーモンドフィッシュ炒め','小松菜クリーム煮']],
 ['ほうれん草','🌿',['ほうれん草ショウガお浸し','ほうれん草エノキサラダ','ほうれん草ベーコンバター炒め']],
 ['ブロッコリー','🥦',['やみつきブロッコリー塩昆布','ブロッコリーハムケチャップ炒め','ブロッコリーとカニカマのポン酢和え']],
 ['カリフラワー','☁️',['塩昆布とカリフラワーの和え物','カリフラワーのマスタード和え','カリフラワーのオイル焼き']],
-['人参','🥕',['キャロットラペ','にんじんしりしり','にんじんやしナムル']],
+['人参','🥕',['キャロットラペ','にんじんしりしり','にんじんもやしナムル']],
 ['大根','🤍',['大根ツナポン','大根みそ','大根明太マヨ']],
 ['白菜','🥬',['白菜の和風おかか和え','白菜とベーコンのミルフィーユ蒸し','白菜のツナチーズ焼き']],
 ['青梗菜','🌱',['青梗菜のしらす和え','青梗菜中華胡麻和え','青梗菜とちくわのごま和え']],
@@ -523,7 +588,28 @@ function homeRecipeRow(v){
     </section>
   `;
 }
-function openRecipeHome(vegName,i){vegSel=currentVegetables().find(v=>v[0]===vegName); recipeSel={veg:vegName,name:vegSel[2][i]}; log('recipe_open',{veg:vegName,recipe:recipeSel.name}); page='recipe';render()}
+function openRecipeHome(vegName,i){
+  vegSel=currentVegetables().find(v=>v[0]===vegName);
+
+  const name=vegSel[2][i];
+  const recipeId=recipeIds[name]||'';
+  const remote=remoteById(recipeId);
+
+  recipeSel={
+    recipe_id:recipeId,
+    veg:remote?.['野菜名']||vegName,
+    name:remote?.['料理名']||name
+  };
+
+  log('recipe_open',{
+    recipe_id:recipeSel.recipe_id,
+    veg:recipeSel.veg,
+    recipe:recipeSel.name
+  });
+
+  page='recipe';
+  render();
+}
 function recipe(){
 
   let g={
@@ -587,9 +673,10 @@ function recipe(){
 function mark(t){
 
   log(t,{
-    veg:recipeSel.veg,
-    recipe:recipeSel.name
-  });
+  recipe_id:recipeSel.recipe_id||'',
+  veg:recipeSel.veg,
+  recipe:recipeSel.name
+});
 
   if(t==='selfMade'){
     alert('「自分で作った」を記録しました。');
