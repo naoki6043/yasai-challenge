@@ -244,6 +244,32 @@ function gradeText(key){
 
   return item[3];
 }
+const vegReadings={
+  '小松菜':'こまつな',
+  'ほうれん草':'ほうれんそう',
+  'ブロッコリー':'ブロッコリー',
+  'カリフラワー':'カリフラワー',
+  '人参':'にんじん',
+  '大根':'だいこん',
+  '白菜':'はくさい',
+  '青梗菜':'ちんげんさい',
+  'かぶ':'かぶ',
+  'ごぼう':'ごぼう'
+};
+
+function vegDisplay(name){
+  if(profile?.grade===1){
+    const reading=vegReadings[name] || name;
+
+    if(reading===name){
+      return name;
+    }
+
+    return `<ruby>${name}<rt>${reading}</rt></ruby>`;
+  }
+
+  return name;
+}
 const vegetables=[
 ['小松菜','🥬',['小松菜お浸し','小松菜アーモンドフィッシュ炒め','小松菜クリーム煮']],
 ['ほうれん草','🌿',['ほうれん草ショウガお浸し','ほうれん草エノキサラダ','ほうれん草ベーコンバター炒め']],
@@ -416,10 +442,10 @@ function homeRecipeRow(v){
 
       <div class=vegTitle>
         <span>${v[1]}</span>
-        <b>${v[0]}</b>
+        <b>${vegDisplay(v[0])}</b>
         <small>
           ${ateEvents().some(e=>e.veg===v[0])
-            ? '✓ 食べた記録あり'
+            ? (profile.grade===1 ? '✓ たべた きろくあり' : '✓ 食べた記録あり')
             : ''
           }
         </small>
@@ -435,11 +461,15 @@ function homeRecipeRow(v){
           let cookOn=false;
 
           if(st.selfMade){
-            cookText='✓ 自分で作った';
+            cookText=profile.grade===1
+  ? '✓ じぶんで つくった'
+  : '✓ 自分で作った';
             cookOn=true;
           }
           else if(st.togetherMade){
-            cookText='✓ いっしょに作った';
+            cookText=profile.grade===1
+  ? '✓ いっしょに つくった'
+  : '✓ いっしょに作った';
             cookOn=true;
           }
           else if(st.oldMade){
@@ -447,7 +477,9 @@ function homeRecipeRow(v){
             cookOn=true;
           }
           else{
-            cookText='○ まだ作っていない';
+            cookText=profile.grade===1
+  ? '○ まだ つくっていない'
+  : '○ まだ作っていない';
           }
 
           return `
@@ -476,7 +508,7 @@ function homeRecipeRow(v){
                 </span>
 
                 <span class="check ${st.ate?'on':''}">
-                  ${st.ate?'✓':'○'} 食べた
+                  ${st.ate?'✓':'○'} ${profile.grade===1?'たべた':'食べた'}
                 </span>
 
               </div>
