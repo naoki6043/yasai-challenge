@@ -1612,21 +1612,75 @@ function quizChoice(){
 }
 function shuffledQuestion(q){
 
-  const items=q.choices.map((text,index)=>({
-    text:text,
-    correct:index===q.answer
-  }));
+  // =====================================
+  // 固定教材の旧形式にも対応
+  //
+  // [
+  //   問題文,
+  //   [選択肢],
+  //   正解番号,
+  //   解説
+  // ]
+  // =====================================
+
+  if(Array.isArray(q)){
+
+    q={
+      question_id:'',
+      text:q[0] || '',
+      choices:Array.isArray(q[1])
+        ? q[1]
+        : [],
+      answer:Number(q[2]) || 0,
+      correctExplanation:q[3] || '',
+      incorrectExplanation:q[3] || '',
+      content_version:'app-fixed-v7'
+    };
+
+  }
+
+
+  // =====================================
+  // 選択肢をランダム化
+  // =====================================
+
+  const items=(q.choices || []).map(
+    (text,index)=>({
+      text:text,
+      correct:index===q.answer
+    })
+  );
+
 
   // Fisher-Yates shuffle
   for(let i=items.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [items[i],items[j]]=[items[j],items[i]];
+
+    const j=
+      Math.floor(
+        Math.random()*(i+1)
+      );
+
+    [
+      items[i],
+      items[j]
+    ]=[
+      items[j],
+      items[i]
+    ];
+
   }
 
+
   return {
+
     ...q,
-    choices:items.map(x=>x.text),
-    answer:items.findIndex(x=>x.correct)
+
+    choices:
+      items.map(x=>x.text),
+
+    answer:
+      items.findIndex(x=>x.correct)
+
   };
 }
 function startPooledQuiz(m){
