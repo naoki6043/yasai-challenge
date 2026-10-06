@@ -47,6 +47,24 @@ function getParticipantId(){
 }
 
 // ========================================
+// 行動記録ごとのイベントID
+// ========================================
+
+function createEventId(){
+
+  if(window.crypto && crypto.randomUUID){
+    return 'E-'+crypto.randomUUID();
+  }
+
+  return (
+    'E-'+
+    Date.now().toString(36)+
+    '-'+
+    Math.random().toString(36).slice(2,10)
+  );
+}
+
+// ========================================
 // 学年・学年区分
 // ========================================
 
@@ -630,19 +648,33 @@ function log(type,data={}){
 
   const event={
     participant_id:getParticipantId(),
+    event_id:createEventId(),
+
     type:type,
+
     ts:Date.now(),
+
     date:new Date().toLocaleDateString('ja-JP'),
+
     grade:profile?.grade || null,
+
     band:profile?.band || '',
+
     app_version:profile?.version || '',
+
+    // Google Sheetへ未送信
+    synced:false,
+
     ...data
   };
 
   events.push(event);
 
   save('events',events);
+
+  return event;
 }
+
 // ========================================
 // 食行動・調理行動の集計
 // ========================================
