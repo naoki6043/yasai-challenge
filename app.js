@@ -1453,16 +1453,28 @@ function currentLessonId(i){
   return `${prefix}_${String(i+1).padStart(2,'0')}`;
 }
 function openLesson(i){
+
   lessonSel=i;
+
   const L=lessonBank()[i];
 
   log('lesson_open',{
+
     stage:i+1,
-    lesson_id:currentLessonId(i),
-    title:L?.title||''
+
+    lesson_id:
+      currentLessonId(i),
+
+    title:
+      L?.title || '',
+
+    content_version:
+      L?.content_version || 'app-fixed-v7'
+
   });
 
   page='lesson';
+
   render();
 }
 function lesson(){
@@ -1730,20 +1742,39 @@ function startPooledQuiz(m){
   quizScore=0;
   quizOpportunity=m;
 
-  log('learning_quiz_start',{
-    milestone:m,
-    completed_lessons:completed.length,
-    candidate_lessons:candidates.length,
-    total:quizQuestions.length,
+ log('learning_quiz_start',{
 
-    question_ids:quizQuestions.map(z=>
-      z.q.question_id||''
-    ),
+  milestone:m,
 
-    lesson_ids:quizQuestions.map(z=>
-      z.lesson_id||''
-    )
-  });
+  completed_lessons:
+    completed.length,
+
+  candidate_lessons:
+    candidates.length,
+
+  total:
+    quizQuestions.length,
+
+  question_ids:
+    quizQuestions
+      .map(z=>z.q.question_id || '')
+      .join('|'),
+
+  lesson_ids:
+    quizQuestions
+      .map(z=>z.lesson_id || '')
+      .join('|'),
+
+  content_versions:
+    quizQuestions
+      .map(z=>
+        z.q.content_version ||
+        z.lesson_version ||
+        'app-fixed-v7'
+      )
+      .join('|')
+
+});
 
   if(quizQuestions.length===0){
 
@@ -1868,7 +1899,80 @@ function pooledAns(i){
 
      </div>`;
 }
-function nextPooledQ(){quizIndex++;if(quizIndex<quizQuestions.length){page='pooledQuiz';render()}else{let key=profile.band+'-m'+quizOpportunity;if(!quizDone.includes(key))quizDone.push(key);save('quizDone',quizDone);log('learning_quiz_complete',{milestone:quizOpportunity,score:quizScore,total:quizQuestions.length,accuracy:quizQuestions.length?quizScore/quizQuestions.length:null});page='quizResult';render()}}
+function nextPooledQ(){
+
+  quizIndex++;
+
+  if(quizIndex<quizQuestions.length){
+
+    page='pooledQuiz';
+
+    render();
+
+    return;
+  }
+
+
+  const key=
+    profile.band+
+    '-m'+
+    quizOpportunity;
+
+
+  if(!quizDone.includes(key)){
+
+    quizDone.push(key);
+
+  }
+
+  save(
+    'quizDone',
+    quizDone
+  );
+
+
+  log('learning_quiz_complete',{
+
+    milestone:
+      quizOpportunity,
+
+    score:
+      quizScore,
+
+    total:
+      quizQuestions.length,
+
+    accuracy:
+      quizQuestions.length
+        ? quizScore/quizQuestions.length
+        : null,
+
+    question_ids:
+      quizQuestions
+        .map(z=>z.q.question_id || '')
+        .join('|'),
+
+    lesson_ids:
+      quizQuestions
+        .map(z=>z.lesson_id || '')
+        .join('|'),
+
+    content_versions:
+      quizQuestions
+        .map(z=>
+          z.q.content_version ||
+          z.lesson_version ||
+          'app-fixed-v7'
+        )
+        .join('|')
+
+  });
+
+
+  page='quizResult';
+
+  render();
+}
 function abandonQuiz(){log('learning_quiz_abandon',{milestone:quizOpportunity,answered:quizIndex,total:quizQuestions.length});page='learn';render()}
 function quizResult(){app.innerHTML=head('クイズ完了',`これまでの学びを確認しました`)+`<div class=hero><b>${quizScore} / ${quizQuestions.length} 問</b><p>クイズは任意です。次の野菜や「まなぶ」に進めます。</p><button class=primary onclick="go('home')">次の野菜を見てみる</button><button class=secondary onclick="go('learn')">まなぶ一覧へ</button></div>`}
 function ymdFromTs(ts){let d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
