@@ -1880,23 +1880,28 @@ function pooledAns(i){
 
   log('learning_quiz_answer',{
 
-    milestone:quizOpportunity,
+  milestone:quizOpportunity,
 
-    stage:z.stage+1,
+  stage:z.stage+1,
 
-    lesson_id:z.lesson_id||'',
+  lesson_id:z.lesson_id||'',
 
-    question_id:q.question_id||'',
+  lesson_title:z.lesson_title||'',
 
-    content_version:q.content_version||'',
+  question_id:q.question_id||'',
 
-    selected_answer:i+1,
+  content_version:
+    q.content_version ||
+    z.lesson_version ||
+    '',
 
-    correct_answer:q.answer+1,
+  selected_answer:i+1,
 
-    correct:ok
+  correct_answer:q.answer+1,
 
-  });
+  correct:ok
+
+});
 
   const explanation=
     ok
