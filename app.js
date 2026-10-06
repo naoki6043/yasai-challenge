@@ -670,9 +670,135 @@ function log(type,data={}){
 
   events.push(event);
 
-  save('events',events);
+    save('events',events);
+
+  // Google Sheetへの送信を試みる
+  syncActionLogs();
 
   return event;
+}
+
+// ========================================
+// Google Sheetへ行動ログを送信
+// ========================================
+
+let actionLogSyncRunning=false;
+
+
+async function syncActionLogs(){
+
+  // 同時に複数の送信処理を走らせない
+  if(actionLogSyncRunning){
+    return;
+  }
+
+  // URL未設定なら何もしない
+  if(
+    !window.ACTION_LOG_API_URL ||
+    window.ACTION_LOG_API_URL.includes('ここに')
+  ){
+    console.warn(
+      'ACTION_LOG_API_URLが設定されていません'
+    );
+    return;
+  }
+
+
+  const unsynced=
+    events.filter(e=>e.synced!==true);
+
+  if(unsynced.length===0){
+    return;
+  }
+
+
+  actionLogSyncRunning=true;
+
+
+  try{
+
+    // 古い記録から順番に送る
+    for(const event of unsynced){
+
+      try{
+
+        const response=
+          await fetch(
+            window.ACTION_LOG_API_URL,
+            {
+              method:'POST',
+
+              headers:{
+                'Content-Type':
+                  'text/plain;charset=utf-8'
+              },
+
+              body:
+                JSON.stringify(event)
+            }
+          );
+
+
+        if(!response.ok){
+          throw new Error(
+            'HTTP '+response.status
+          );
+        }
+
+
+        const result=
+          await response.json();
+
+
+        if(result.ok===true){
+
+          // 同じevent_idの端末内データを
+          // 送信済みに変更
+          const target=
+            events.find(e=>
+              e.event_id===event.event_id
+            );
+
+          if(target){
+            target.synced=true;
+          }
+
+          save(
+            'events',
+            events
+          );
+
+        }
+        else{
+
+          console.warn(
+            '行動ログ保存エラー',
+            result
+          );
+
+        }
+
+      }
+      catch(error){
+
+        // 通信できなかった記録は
+        // synced:false のまま残す
+        console.warn(
+          '行動ログ送信失敗',
+          event.event_id,
+          error
+        );
+
+      }
+
+    }
+
+  }
+  finally{
+
+    actionLogSyncRunning=false;
+
+  }
 }
 
 // ========================================
@@ -2252,5 +2378,8 @@ function render(){
   f();
   navRender();
 }
+
+// 起動時に未送信ログがあれば再送
+syncActionLogs();
 
 loadPublishedRecipes().finally(()=>render());
