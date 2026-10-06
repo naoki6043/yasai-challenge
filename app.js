@@ -704,8 +704,42 @@ async function syncActionLogs(){
   }
 
 
-  const unsynced=
-    events.filter(e=>e.synced!==true);
+  // ========================================
+// 旧形式ログを新形式へ補完してから送信
+// ========================================
+
+let repaired=false;
+
+events.forEach(e=>{
+
+  // participant_id がない旧ログ
+  if(!e.participant_id){
+    e.participant_id=getParticipantId();
+    repaired=true;
+  }
+
+  // event_id がない旧ログ
+  if(!e.event_id){
+    e.event_id=createEventId();
+    repaired=true;
+  }
+
+  // synced が未定義の旧ログ
+  if(typeof e.synced==='undefined'){
+    e.synced=false;
+    repaired=true;
+  }
+
+});
+
+if(repaired){
+  save('events',events);
+}
+
+
+// 未送信ログだけを抽出
+const unsynced=
+  events.filter(e=>e.synced!==true);
 
   if(unsynced.length===0){
     return;
