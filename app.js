@@ -968,6 +968,15 @@ function head(t,s=''){return `<div class=top><div><div class=brand>${t}</div><di
 function setup(){app.innerHTML=head('朝食やさいチャレンジ','はじめに学年をえらんでね')+`<div class=card><h2>あなたは何年生？</h2><p>学年に合わせて「まなぶ」と確認クイズが変わります。</p><div class=gradegrid>${[1,2,3,4,5,6].map(g=>`<button onclick=chooseGrade(${g})><b>${g}</b>年生</button>`).join('')}</div><p class=note>1・2年生＝低学年、3・4年生＝中学年、5・6年生＝高学年として内容を切り替えます。</p></div>`;nav.innerHTML=''}
 function chooseGrade(g){
 
+  // 学年変更操作から来たかどうか
+  const isGradeChange=
+    get('gradeChangePending',false)===true;
+
+  // 変更前の学年を取得
+  const previousGrade=
+    get('previousGrade',null);
+
+
   profile={
     id:getParticipantId(),
     grade:g,
@@ -977,9 +986,36 @@ function chooseGrade(g){
 
   save('profile',profile);
 
-  log('grade_selected',{
-    participant_id:profile.id
-  });
+
+  // --------------------------------
+  // 研究用ログ
+  // --------------------------------
+
+  if(isGradeChange){
+
+    log('grade_changed',{
+      previous_grade:previousGrade,
+      new_grade:g
+    });
+
+    // 一時データを削除
+    localStorage.removeItem(
+      PREFIX+'gradeChangePending'
+    );
+
+    localStorage.removeItem(
+      PREFIX+'previousGrade'
+    );
+
+  }
+  else{
+
+    log('grade_selected',{
+      selected_grade:g
+    });
+
+  }
+
 
   page='home';
 
@@ -2515,7 +2551,39 @@ function notice(){
     `;
 }
 function settings(){app.innerHTML=head('せってい','秋冬版 v7')+`<div class=card><b>${profile.grade}年生・${bandName[profile.band]}</b><p>学年を変えると、学ぶ内容と確認クイズが切り替わります。</p><button class=secondary onclick="changeGrade()">学年を選び直す</button></div>`}
-function changeGrade(){if(confirm('学年を選び直しますか？ 行動記録は残ります。')){profile=null;localStorage.removeItem(PREFIX+'profile');page='setup';render()}}
+function changeGrade(){
+
+  if(
+    confirm(
+      '学年を選び直しますか？ 行動記録は残ります。'
+    )
+  ){
+
+    // 変更前の学年を一時保存
+    save(
+      'previousGrade',
+      profile?.grade || null
+    );
+
+    // 学年変更操作であることを記録
+    save(
+      'gradeChangePending',
+      true
+    );
+
+    // profileだけ削除
+    // participantIdとeventsは削除しない
+    profile=null;
+
+    localStorage.removeItem(
+      PREFIX+'profile'
+    );
+
+    page='setup';
+
+    render();
+  }
+}
 function go(p){
   page=p;
   render();
