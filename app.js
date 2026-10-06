@@ -3,6 +3,14 @@ const PREFIX='awveg-v6-';
 const save=(k,v)=>localStorage.setItem(PREFIX+k,JSON.stringify(v));
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
 let profile=get('profile',null), events=get('events',[]), learnDone=get('learnDone',[]), quizDone=get('quizDone',[]);
+// 既存利用者のIDを匿名参加者IDとして引き継ぐ
+if(
+  profile &&
+  profile.id &&
+  !get('participantId','')
+){
+  save('participantId',profile.id);
+}
 let page=profile?'home':'setup', vegSel=null, recipeSel=null, lessonSel=null, quizIndex=0, quizScore=0, quizQuestions=[], quizOpportunity=null;
 let calendarCursor=new Date();
 
@@ -10,6 +18,33 @@ const recipeImages={
   '小松菜お浸し':'images/recipe_01.jpeg'
 };
 
+// ========================================
+// 匿名参加者ID
+// ========================================
+
+function getParticipantId(){
+
+  let id=get('participantId','');
+
+  if(id){
+    return id;
+  }
+
+  if(window.crypto && crypto.randomUUID){
+    id='P-'+crypto.randomUUID();
+  }
+  else{
+    id=
+      'P-'+
+      Date.now().toString(36)+
+      '-'+
+      Math.random().toString(36).slice(2,10);
+  }
+
+  save('participantId',id);
+
+  return id;
+}
 
 // ========================================
 // 学年・学年区分
@@ -591,7 +626,23 @@ high:[
 {title:'地域・季節と食文化',intro:'地域の産物や料理、季節・行事の食事には、その地域や日本の食文化が表れています。',points:['地域に伝わる料理を知ることは、地域の食文化を理解する手がかりになります。','季節や行事と結びついた食事も、受け継がれてきた食文化の一つです。'],action:'自分の地域や家庭で秋冬に食べる料理を1つ調べよう。',quiz:[['地域に伝わる料理を調べると何を知る手がかりになる？',['地域の食文化','計算方法','交通ルール'],0,'地域の料理は食文化を理解する手がかりになると学びました。'],['季節や行事の食事について正しいのは？',['食文化と結びつくものがある','食文化とは関係ない','すべて同じ料理である'],0,'季節や行事と結びついた食事も食文化の一つと学びました。']]}
 ]};
 const thresholds=[0,2,4,6,8,10];
-function log(type,data={}){events.push({type,ts:Date.now(),date:new Date().toLocaleDateString('ja-JP'),grade:profile?.grade,band:profile?.band,...data});save('events',events)}
+function log(type,data={}){
+
+  const event={
+    participant_id:getParticipantId(),
+    type:type,
+    ts:Date.now(),
+    date:new Date().toLocaleDateString('ja-JP'),
+    grade:profile?.grade || null,
+    band:profile?.band || '',
+    app_version:profile?.version || '',
+    ...data
+  };
+
+  events.push(event);
+
+  save('events',events);
+}
 // ========================================
 // 食行動・調理行動の集計
 // ========================================
@@ -746,7 +797,25 @@ function unlockedStage(){
 }
 function head(t,s=''){return `<div class=top><div><div class=brand>${t}</div><div class=sub>${s}</div></div><span>🍂</span></div>`}
 function setup(){app.innerHTML=head('朝食やさいチャレンジ','はじめに学年をえらんでね')+`<div class=card><h2>あなたは何年生？</h2><p>学年に合わせて「まなぶ」と確認クイズが変わります。</p><div class=gradegrid>${[1,2,3,4,5,6].map(g=>`<button onclick=chooseGrade(${g})><b>${g}</b>年生</button>`).join('')}</div><p class=note>1・2年生＝低学年、3・4年生＝中学年、5・6年生＝高学年として内容を切り替えます。</p></div>`;nav.innerHTML=''}
-function chooseGrade(g){profile={id:'local-'+Date.now(),grade:g,band:bandOf(g),version:'autumn-winter-v7'};save('profile',profile);log('grade_selected');page='home';render()}
+function chooseGrade(g){
+
+  profile={
+    id:getParticipantId(),
+    grade:g,
+    band:bandOf(g),
+    version:'autumn-winter-v7'
+  };
+
+  save('profile',profile);
+
+  log('grade_selected',{
+    participant_id:profile.id
+  });
+
+  page='home';
+
+  render();
+}
 function home(){
 
   let c=ateCount();
