@@ -1433,13 +1433,32 @@ function quizOpportunityState(){
 }
 function quizPrompt(){let qs=quizOpportunityState();if(!qs.available.length)return '';let m=qs.available[0];return `<div class="card quizPrompt"><b>📝 学んだことをクイズでたしかめてみる？</b><p>${m}つの「まなぶ」が終わりました。これまで学んだ内容だけから問題が出ます。</p><button class=primary onclick="openQuizChoice(${m})">クイズをえらぶ</button><p class=note>今はやらなくても大丈夫。あとからいつでも挑戦できます。</p></div>`}
 function learn(){let u=unlockedStage(), bank=lessonBank(),qs=quizOpportunityState();app.innerHTML=head('まなぶ',`${profile.grade}年生に合わせた内容です`)+`<div class=card><b>まず学ぶ。クイズはあとで、自分で選んで挑戦。</b><p class=note>クイズは複数の学習を終えた後に表示され、未学習の内容からは出題しません。</p></div>${quizPrompt()}<div class=timeline>${bank.map((L,i)=>{let open=i<=u,done=learnDone.includes(profile.band+'-'+i);return `<div class="stage ${open?'open':'closed'}"><b>${open?'🔓':'🔒'} ${i+1}. ${L.title}${done?' ✓学習':''}</b><span class=note>${i===0?'最初からOPEN':`${thresholds[i]}種類の料理を食べるとOPEN`}</span>${open?`<button class=secondary onclick="openLesson(${i})">${done?'もう一度見る':'学んでみる'}</button>`:''}</div>`}).join('')}</div>${qs.next?`<p class=note>次のクイズ選択は「まなぶ」を${qs.next}つ完了すると表示されます。</p>`:''}`}
+function currentLessonId(i){
+
+  const L=lessonBank()[i];
+
+  // Google Sheetから取得した学習には
+  // すでにlesson_idがある
+  if(L?.lesson_id){
+    return L.lesson_id;
+  }
+
+  // アプリ内固定教材の仮ID
+  const prefix={
+    low:'L_LOW',
+    mid:'L_MID',
+    high:'L_HIGH'
+  }[profile.band] || 'L';
+
+  return `${prefix}_${String(i+1).padStart(2,'0')}`;
+}
 function openLesson(i){
   lessonSel=i;
   const L=lessonBank()[i];
 
   log('lesson_open',{
     stage:i+1,
-    lesson_id:L?.lesson_id||'',
+    lesson_id:currentLessonId(i),
     title:L?.title||''
   });
 
@@ -1522,7 +1541,7 @@ function finishLesson(){
 
     log('lesson_complete',{
       stage:lessonSel+1,
-      lesson_id:L?.lesson_id||'',
+      lesson_id:currentLessonId(lessonSel),
       title:L?.title||'',
       content_version:L?.content_version||''
     });
