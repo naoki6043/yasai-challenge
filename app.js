@@ -705,41 +705,18 @@ async function syncActionLogs(){
 
 
   // ========================================
-// 旧形式ログを新形式へ補完してから送信
+// 未送信ログの整理
 // ========================================
 
-let repaired=false;
-
-events.forEach(e=>{
-
-  // participant_id がない旧ログ
-  if(!e.participant_id){
-    e.participant_id=getParticipantId();
-    repaired=true;
-  }
-
-  // event_id がない旧ログ
-  if(!e.event_id){
-    e.event_id=createEventId();
-    repaired=true;
-  }
-
-  // synced が未定義の旧ログ
-  if(typeof e.synced==='undefined'){
-    e.synced=false;
-    repaired=true;
-  }
-
-});
-
-if(repaired){
-  save('events',events);
-}
-
-
-// 未送信ログだけを抽出
+// 新形式のログだけ送信する。
+// participant_id / event_id がない旧形式ログは
+// 端末内には残すが、再送しない。
 const unsynced=
-  events.filter(e=>e.synced!==true);
+  events.filter(e=>
+    e.synced!==true &&
+    e.participant_id &&
+    e.event_id
+  );
 
   if(unsynced.length===0){
     return;
