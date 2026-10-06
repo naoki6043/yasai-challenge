@@ -1331,16 +1331,27 @@ function openRecipeHome(vegName,i){
   const remote=remoteById(recipeId);
 
   recipeSel={
-    recipe_id:recipeId,
-    veg:remote?.['野菜名']||vegName,
-    name:remote?.['料理名']||name
-  };
+  recipe_id:recipeId,
+
+  season_id:
+    remote?.['season_id'] ||
+    'AW',
+
+  veg:
+    remote?.['野菜名'] ||
+    vegName,
+
+  name:
+    remote?.['料理名'] ||
+    name
+};
 
   log('recipe_open',{
-    recipe_id:recipeSel.recipe_id,
-    veg:recipeSel.veg,
-    recipe:recipeSel.name
-  });
+  recipe_id:recipeSel.recipe_id,
+  season_id:recipeSel.season_id,
+  veg:recipeSel.veg,
+  recipe:recipeSel.name
+});
 
   page='recipe';
   render();
@@ -1448,10 +1459,11 @@ function mark(t){
 
 
   log(t,{
-    recipe_id:recipeSel.recipe_id||'',
-    veg:recipeSel.veg,
-    recipe:recipeSel.name
-  });
+  recipe_id:recipeSel.recipe_id||'',
+  season_id:recipeSel.season_id||'AW',
+  veg:recipeSel.veg,
+  recipe:recipeSel.name
+});
 
 
   if(t==='selfMade'){
