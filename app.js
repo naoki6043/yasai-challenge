@@ -137,7 +137,7 @@ function loadPublishedRecipes(){
       cleanup();
       console.warn('APIの読み込みがタイムアウトしました');
       resolve();
-    },10000);
+    },30000);
 
     function cleanup(){
       clearTimeout(timeout);
