@@ -266,18 +266,12 @@ function recipePhoto(name, explicitId=''){
   // 移行期間中の旧画像
   return recipeImages[name] || '';
 }
-function recipeDetailHTML(name){
+function recipeDetailHTML(name, explicitId=''){
 
-  // 固定名からrecipe_idを探す
-  let id=recipeIds[name]||'';
-
-  // 詳細画面から来た場合はrecipeSelのIDを優先
-  if(
-    recipeSel &&
-    recipeSel.recipe_id
-  ){
-    id=recipeSel.recipe_id;
-  }
+  const id=
+    explicitId ||
+    recipeIds[name] ||
+    '';
 
   const r=
     remoteById(id) ||
@@ -1121,7 +1115,10 @@ function recipe(){
         <p>${g}</p>
       </div>
 
-      ${recipeDetailHTML(recipeSel.name)}
+      ${recipeDetailHTML(
+  recipeSel.name,
+  recipeSel.recipe_id
+)}
     </div>
 
     <div class=card>
