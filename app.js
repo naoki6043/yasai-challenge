@@ -47,6 +47,86 @@ function getParticipantId(){
 }
 
 // ========================================
+// イベント配布用 参加者ID
+// 例：A023
+// 未登録でもアプリは利用できる
+// ========================================
+
+function getStudyId(){
+  return String(
+    get('studyId','') || ''
+  ).trim().toUpperCase();
+}
+
+function saveStudyId(){
+
+  const input =
+    document.querySelector('#studyIdInput');
+
+  if(!input){
+    return;
+  }
+
+  const id =
+    String(input.value || '')
+      .trim()
+      .toUpperCase();
+
+  if(!id){
+    alert('参加者IDを入力してください。');
+    return;
+  }
+
+  // A001～A999を想定
+  if(!/^A\d{3}$/.test(id)){
+    alert('参加者IDを確認してください。例：A023');
+    return;
+  }
+
+  const oldId=getStudyId();
+
+  save('studyId',id);
+
+  log('study_id_registered',{
+    study_id:id,
+    previous_study_id:oldId
+  });
+
+  alert(
+    '参加者ID '+id+' を登録しました。'
+  );
+
+  render();
+}
+
+function copyStudyId(){
+
+  const id=getStudyId();
+
+  if(!id){
+    return;
+  }
+
+  if(
+    navigator.clipboard &&
+    navigator.clipboard.writeText
+  ){
+    navigator.clipboard
+      .writeText(id)
+      .then(()=>{
+        alert('参加者IDをコピーしました。');
+      })
+      .catch(()=>{
+        alert('参加者ID：'+id);
+      });
+
+    return;
+  }
+
+  alert('参加者ID：'+id);
+}
+
+// ========================================
 // 行動記録ごとのイベントID
 // ========================================
 
@@ -646,9 +726,10 @@ high:[
 const thresholds=[0,2,4,6,8,10];
 function log(type,data={}){
 
-  const event={
-    participant_id:getParticipantId(),
-    event_id:createEventId(),
+ const event={
+  participant_id:getParticipantId(),
+  study_id:getStudyId(),
+  event_id:createEventId(),
 
     type:type,
 
@@ -2365,15 +2446,79 @@ let allChallengeDays=
       ||
       '<li>まだ記録はありません。</li>';
 
+const studyId=getStudyId();
 
+const studyIdCard=
+  studyId
+    ? `
+      <div class="card">
+        <h3>あなたの参加者ID</h3>
+
+        <div style="
+          font-size:2rem;
+          font-weight:bold;
+          text-align:center;
+          margin:12px 0;
+        ">
+          ${studyId}
+        </div>
+
+        <p class="note">
+          次回のアンケートで使用します。
+        </p>
+
+        <button
+          class="secondary"
+          onclick="copyStudyId()">
+          IDをコピー
+        </button>
+      </div>
+    `
+    : `
+      <div class="card">
+        <h3>参加者ID</h3>
+
+        <p>
+          イベントで参加者IDを受け取った方は
+          入力してください。
+        </p>
+
+        <input
+          id="studyIdInput"
+          type="text"
+          maxlength="4"
+          placeholder="例：A023"
+          style="
+            width:100%;
+            box-sizing:border-box;
+            font-size:1.3rem;
+            padding:12px;
+            margin:8px 0;
+          ">
+
+        <button
+          class="primary"
+          onclick="saveStudyId()">
+          参加者IDを登録
+        </button>
+
+        <p class="note">
+          IDがわからなくても、
+          このアプリはそのまま利用できます。
+        </p>
+      </div>
+    `;
+  
   // ---------- 画面表示 ----------
   app.innerHTML=
-    head(
-      'きろく',
-      'チャレンジをふり返ろう'
-    )+
+  head(
+    'きろく',
+    'チャレンジをふり返ろう'
+  )+
 
-    `<h2>カレンダー</h2>
+  studyIdCard+
+
+  `<h2>カレンダー</h2>
 
      ${calendarHTML(calendarCursor)}
 
