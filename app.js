@@ -250,8 +250,7 @@ function loadPublishedRecipes(){
           Array.isArray(data.notices) ? data.notices : [];
 
         remoteLoaded=true;
-        alert('API取得成功：レシピ ' + remoteRecipes.length + '件');
-
+        
         console.log(
           '公開データ取得：',
           'レシピ '+remoteRecipes.length+'件',
