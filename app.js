@@ -474,8 +474,6 @@ function recipeDetailHTML(name, explicitId=''){
 
   if(servings){
 
-    // 「2」と入力されていても
-    // 「2人分」と入力されていても対応
     servingsText=
       servings.includes('人')
         ? `（${servings}）`
@@ -489,6 +487,87 @@ function recipeDetailHTML(name, explicitId=''){
 
   const cookingTime=
     String(r['調理時間(分)']||'').trim();
+
+
+  // -----------------------------
+  // 栄養情報
+  // 入力されている項目だけ表示
+  // -----------------------------
+
+  const nutritionItems=[];
+
+  const energy=
+    String(r['エネルギー(kcal)']||'').trim();
+
+  const calcium=
+    String(r['カルシウム(mg)']||'').trim();
+
+  const iron=
+    String(r['鉄(mg)']||'').trim();
+
+  const vitaminC=
+    String(r['ビタミンC(mg)']||'').trim();
+
+  const fiber=
+    String(r['食物繊維(g)']||'').trim();
+
+  const vegetableWeight=
+    String(r['野菜重量(g)']||'').trim();
+
+
+  if(energy){
+    nutritionItems.push(`
+      <li>
+        <span>エネルギー</span>
+        <strong>${energy} kcal</strong>
+      </li>
+    `);
+  }
+
+  if(calcium){
+    nutritionItems.push(`
+      <li>
+        <span>カルシウム</span>
+        <strong>${calcium} mg</strong>
+      </li>
+    `);
+  }
+
+  if(iron){
+    nutritionItems.push(`
+      <li>
+        <span>鉄</span>
+        <strong>${iron} mg</strong>
+      </li>
+    `);
+  }
+
+  if(vitaminC){
+    nutritionItems.push(`
+      <li>
+        <span>ビタミンC</span>
+        <strong>${vitaminC} mg</strong>
+      </li>
+    `);
+  }
+
+  if(fiber){
+    nutritionItems.push(`
+      <li>
+        <span>食物繊維</span>
+        <strong>${fiber} g</strong>
+      </li>
+    `);
+  }
+
+  if(vegetableWeight){
+    nutritionItems.push(`
+      <li>
+        <span>野菜</span>
+        <strong>${vegetableWeight} g</strong>
+      </li>
+    `);
+  }
 
 
   // -----------------------------
@@ -527,6 +606,17 @@ function recipeDetailHTML(name, explicitId=''){
       `
       : ''
     }
+
+    ${nutritionItems.length
+  ? `
+    <h3>栄養情報（1人分）</h3>
+
+    <ul class="ingredientList nutritionList">
+      ${nutritionItems.join('')}
+    </ul>
+  `
+  : ''
+}
 
     ${r['調理ポイント']
       ? `
