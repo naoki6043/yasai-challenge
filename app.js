@@ -232,161 +232,57 @@ function applyPublishedData(data){
   return true;
 }
 
-
 function loadPublishedRecipes(){
-  return new Promise((resolve)=>{
 
-    if(
-      !window.RECIPE_API_URL ||
-      window.RECIPE_API_URL.includes('ここに')
-    ){
-      console.warn('API URLが設定されていません');
-      resolve();
-      return;
+  const url =
+    './content.json?_=' +
+    Date.now();
+
+  return fetch(url,{
+    method:'GET',
+    cache:'no-store'
+  })
+
+  .then(response=>{
+
+    if(!response.ok){
+      throw new Error(
+        'content.json HTTP ' +
+        response.status
+      );
     }
 
-    // --------------------------------
-    // 1. まず通常の fetch を試す
-    // --------------------------------
+    return response.json();
 
-    const fetchUrl =
-      window.RECIPE_API_URL +
-      (window.RECIPE_API_URL.includes('?') ? '&' : '?') +
-      '_=' + Date.now();
+  })
 
-    fetch(fetchUrl, {
-      method: 'GET',
-      cache: 'no-store'
-    })
-    .then(response => {
+  .then(data=>{
 
-      if(!response.ok){
-        throw new Error(
-          'HTTP ' + response.status
-        );
-      }
-
-      return response.json();
-    })
-    .then(data => {
-
-      if(!applyPublishedData(data)){
-        throw new Error(
-          'APIデータ形式エラー'
-        );
-      }
-
-      console.log('API取得方式：fetch');
-      resolve();
-
-    })
-    .catch(fetchError => {
-
-      console.warn(
-        'fetchで取得できませんでした。JSONPへ切り替えます。',
-        fetchError
+    if(!applyPublishedData(data)){
+      throw new Error(
+        'content.json の形式が正しくありません'
       );
-
-      // --------------------------------
-      // 2. fetch失敗時はJSONP
-      // --------------------------------
-
-      loadPublishedRecipesByJsonp()
-        .then(resolve);
-
-    });
-
-  });
-}
-
-
-function loadPublishedRecipesByJsonp(){
-  return new Promise((resolve)=>{
-
-    const callbackName =
-      'contentCallback_' +
-      Date.now() +
-      '_' +
-      Math.random()
-        .toString(36)
-        .slice(2);
-
-    const script =
-      document.createElement('script');
-
-    const separator =
-      window.RECIPE_API_URL.includes('?')
-        ? '&'
-        : '?';
-
-    let finished = false;
-
-    function finish(){
-      if(finished) return;
-
-      finished = true;
-
-      clearTimeout(timeout);
-
-      if(script.parentNode){
-        script.parentNode.removeChild(script);
-      }
-
-      try{
-        delete window[callbackName];
-      }catch(e){
-        window[callbackName] = undefined;
-      }
-
-      resolve();
     }
 
+    console.log(
+      'GitHub content.json 取得成功'
+    );
 
-    window[callbackName] = function(data){
+  })
 
-      if(applyPublishedData(data)){
-        console.log('API取得方式：JSONP');
-      }
+  .catch(error=>{
 
-      finish();
-    };
+    console.error(
+      'content.json の取得に失敗しました',
+      error
+    );
 
-
-    script.onerror = function(){
-
-      console.warn(
-        'JSONPでもAPIを取得できませんでした'
-      );
-
-      finish();
-    };
-
-
-    const timeout =
-      setTimeout(()=>{
-
-        console.warn(
-          'JSONPの読み込みがタイムアウトしました'
-        );
-
-        finish();
-
-      },15000);
-
-
-    script.src =
-      window.RECIPE_API_URL +
-      separator +
-      'callback=' +
-      encodeURIComponent(callbackName) +
-      '&_=' +
-      Date.now();
-
-
-    document.head.appendChild(script);
-
+    // content.jsonが取得できなくても
+    // アプリそのものは起動する
   });
+
 }
+
 function remoteByName(name){return remoteRecipes.find(r=>r['料理名']===name)}
 function remoteById(id){
   return remoteRecipes.find(
