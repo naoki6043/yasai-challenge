@@ -201,25 +201,131 @@ let remoteLessons=[];
 let remoteQuizzes=[];
 let remoteNotices=[];
 let remoteLoaded=false;
+function applyPublishedData(data){
+  if(!data || data.ok !== true){
+    console.warn('APIの応答形式が正しくありません', data);
+    return false;
+  }
+
+  remoteRecipes =
+    Array.isArray(data.recipes) ? data.recipes : [];
+
+  remoteLessons =
+    Array.isArray(data.lessons) ? data.lessons : [];
+
+  remoteQuizzes =
+    Array.isArray(data.quizzes) ? data.quizzes : [];
+
+  remoteNotices =
+    Array.isArray(data.notices) ? data.notices : [];
+
+  remoteLoaded = true;
+
+  console.log(
+    '公開データ取得：',
+    'レシピ ' + remoteRecipes.length + '件',
+    '学習 ' + remoteLessons.length + '件',
+    'クイズ ' + remoteQuizzes.length + '件',
+    'お知らせ ' + remoteNotices.length + '件'
+  );
+
+  return true;
+}
+
+
 function loadPublishedRecipes(){
   return new Promise((resolve)=>{
-    if(!window.RECIPE_API_URL || window.RECIPE_API_URL.includes('ここに')){
+
+    if(
+      !window.RECIPE_API_URL ||
+      window.RECIPE_API_URL.includes('ここに')
+    ){
       console.warn('API URLが設定されていません');
       resolve();
       return;
     }
 
-    const callbackName='contentCallback_'+Date.now();
-    const script=document.createElement('script');
-    const separator=window.RECIPE_API_URL.includes('?')?'&':'?';
+    // --------------------------------
+    // 1. まず通常の fetch を試す
+    // --------------------------------
 
-    const timeout=setTimeout(()=>{
-      cleanup();
-      console.warn('APIの読み込みがタイムアウトしました');
+    const fetchUrl =
+      window.RECIPE_API_URL +
+      (window.RECIPE_API_URL.includes('?') ? '&' : '?') +
+      '_=' + Date.now();
+
+    fetch(fetchUrl, {
+      method: 'GET',
+      cache: 'no-store'
+    })
+    .then(response => {
+
+      if(!response.ok){
+        throw new Error(
+          'HTTP ' + response.status
+        );
+      }
+
+      return response.json();
+    })
+    .then(data => {
+
+      if(!applyPublishedData(data)){
+        throw new Error(
+          'APIデータ形式エラー'
+        );
+      }
+
+      console.log('API取得方式：fetch');
       resolve();
-    },30000);
 
-    function cleanup(){
+    })
+    .catch(fetchError => {
+
+      console.warn(
+        'fetchで取得できませんでした。JSONPへ切り替えます。',
+        fetchError
+      );
+
+      // --------------------------------
+      // 2. fetch失敗時はJSONP
+      // --------------------------------
+
+      loadPublishedRecipesByJsonp()
+        .then(resolve);
+
+    });
+
+  });
+}
+
+
+function loadPublishedRecipesByJsonp(){
+  return new Promise((resolve)=>{
+
+    const callbackName =
+      'contentCallback_' +
+      Date.now() +
+      '_' +
+      Math.random()
+        .toString(36)
+        .slice(2);
+
+    const script =
+      document.createElement('script');
+
+    const separator =
+      window.RECIPE_API_URL.includes('?')
+        ? '&'
+        : '?';
+
+    let finished = false;
+
+    function finish(){
+      if(finished) return;
+
+      finished = true;
+
       clearTimeout(timeout);
 
       if(script.parentNode){
@@ -229,60 +335,56 @@ function loadPublishedRecipes(){
       try{
         delete window[callbackName];
       }catch(e){
-        window[callbackName]=undefined;
+        window[callbackName] = undefined;
       }
+
+      resolve();
     }
 
-    window[callbackName]=function(data){
 
-      if(data && data.ok===true){
+    window[callbackName] = function(data){
 
-        remoteRecipes=
-          Array.isArray(data.recipes) ? data.recipes : [];
-
-        remoteLessons=
-          Array.isArray(data.lessons) ? data.lessons : [];
-
-        remoteQuizzes=
-          Array.isArray(data.quizzes) ? data.quizzes : [];
-
-        remoteNotices=
-          Array.isArray(data.notices) ? data.notices : [];
-
-        remoteLoaded=true;
-        
-        console.log(
-          '公開データ取得：',
-          'レシピ '+remoteRecipes.length+'件',
-          '学習 '+remoteLessons.length+'件',
-          'クイズ '+remoteQuizzes.length+'件',
-          'お知らせ '+remoteNotices.length+'件'
-        );
-
-      }else{
-        console.warn(
-          'APIの応答形式が正しくありません',
-          data
-        );
+      if(applyPublishedData(data)){
+        console.log('API取得方式：JSONP');
       }
 
-      cleanup();
-      resolve();
+      finish();
     };
 
-    script.onerror=function(){
-      console.warn('APIへの接続に失敗しました');
-      cleanup();
-      resolve();
+
+    script.onerror = function(){
+
+      console.warn(
+        'JSONPでもAPIを取得できませんでした'
+      );
+
+      finish();
     };
 
-    script.src=
-      window.RECIPE_API_URL+
-      separator+
-      'callback='+encodeURIComponent(callbackName)+
-      '&_='+Date.now();
+
+    const timeout =
+      setTimeout(()=>{
+
+        console.warn(
+          'JSONPの読み込みがタイムアウトしました'
+        );
+
+        finish();
+
+      },15000);
+
+
+    script.src =
+      window.RECIPE_API_URL +
+      separator +
+      'callback=' +
+      encodeURIComponent(callbackName) +
+      '&_=' +
+      Date.now();
+
 
     document.head.appendChild(script);
+
   });
 }
 function remoteByName(name){return remoteRecipes.find(r=>r['料理名']===name)}
