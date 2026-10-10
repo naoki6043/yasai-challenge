@@ -2551,6 +2551,8 @@ function monthEvents(d){let k=monthKey(d);return events.filter(e=>ymdFromTs(e.ts
 function dayEvents(dateStr){return events.filter(e=>ymdFromTs(e.ts)===dateStr)}
 function eventIcon(e){
 
+  function eventIcon(e){
+
   if(e.type==='selfMade') return '👩‍🍳';
 
   if(e.type==='togetherMade') return '👪';
@@ -2559,6 +2561,9 @@ function eventIcon(e){
   if(e.type==='made') return '🍳';
 
   if(e.type==='ate') return '🥕';
+
+  // 食べなかった（0％）
+  if(e.type==='ate_zero') return '◯';
 
   if(e.type==='lesson_complete') return '📖';
 
@@ -2574,7 +2579,14 @@ function calendarHTML(d){
    let active=icons.length?' active':'';
    cells.push(`<button class="calCell${active}" onclick="showDay('${ds}')"><b>${day}</b><span>${icons.join('')}</span></button>`);
  }
- return `<div class=calendarCard><div class=calHead><button onclick="moveMonth(-1)">‹</button><b>${y}年 ${m+1}月</b><button onclick="moveMonth(1)">›</button></div><div class=calWeek><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div><div class=calGrid>${cells.join('')}</div><div class=calLegend><span>👩‍🍳 自分で作った</span><span>👪 いっしょに作った</span><span>🥕 食べた</span><span>📖 学んだ</span><span>✓ クイズ</span></div>`
+ return `<div class=calendarCard><div class=calHead><button onclick="moveMonth(-1)">‹</button><b>${y}年 ${m+1}月</b><button onclick="moveMonth(1)">›</button></div><div class=calWeek><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div><div class=calGrid>${cells.join('')}</div><div class=calLegend>
+  <span>👩‍🍳 自分で作った</span>
+  <span>👪 いっしょに作った</span>
+  <span>🥕 食べた</span>
+  <span>◯ 食べなかった</span>
+  <span>📖 学んだ</span>
+  <span>✓ クイズ</span>
+</div>`
 }
 function moveMonth(n){calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+n,1);record()}
 function showDay(ds){
@@ -2585,6 +2597,7 @@ function showDay(ds){
       'togetherMade',
       'made',
       'ate',
+      'ate_zero',
       'lesson_complete',
       'learning_quiz_complete'
     ].includes(e.type)
@@ -2632,14 +2645,26 @@ function showDay(ds){
           `;
         }
 
-        if(e.type==='ate'){
-          return `
-            <li>
-              🥕 食べた：
-              ${e.veg||''} ${e.recipe||''}
-            </li>
-          `;
-        }
+        if(e.type==='ate' || e.type==='ate_zero'){
+
+  const portion = e.portion_label
+    ? `（${e.portion_label}）`
+    : '';
+
+  const estimated =
+    e.estimated_vegetable_intake_g != null
+      ? `／推定${e.estimated_vegetable_intake_g}g`
+      : '';
+
+  return `
+    <li>
+      🥕 ${e.type==='ate_zero' ? '食べなかった' : '食べた'}：
+      ${e.veg||''} ${e.recipe||''}
+      ${portion}
+      ${estimated}
+    </li>
+  `;
+}
 
         if(e.type==='lesson_complete'){
           return `
@@ -2733,6 +2758,18 @@ function record(){
   let monthAte=
     me.filter(e=>e.type==='ate');
 
+  // 今月の推定野菜摂取量
+// 旧記録など、推定値がないものは合計対象外
+const monthEstimatedVegetable = me
+  .filter(e =>
+    e.type === 'ate' &&
+    e.estimated_vegetable_intake_g != null
+  )
+  .reduce(
+    (sum, e) =>
+      sum + Number(e.estimated_vegetable_intake_g || 0),
+    0
+  );
   let monthVeg=
     new Set(
       monthAte.map(e=>e.veg)
@@ -2962,6 +2999,10 @@ const studyIdCard=
 
      <div class=monthStats>
 
+       <div class=card>
+  <b>${Math.round(monthEstimatedVegetable * 10) / 10}g</b>
+  <span>推定野菜摂取量</span>
+</div>
        <div class=card>
          <b>${challengeDays}</b>
          <span>チャレンジした日</span>
