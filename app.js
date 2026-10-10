@@ -2551,8 +2551,6 @@ function monthEvents(d){let k=monthKey(d);return events.filter(e=>ymdFromTs(e.ts
 function dayEvents(dateStr){return events.filter(e=>ymdFromTs(e.ts)===dateStr)}
 function eventIcon(e){
 
-  function eventIcon(e){
-
   if(e.type==='selfMade') return '👩‍🍳';
 
   if(e.type==='togetherMade') return '👪';
