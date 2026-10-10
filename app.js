@@ -1591,9 +1591,9 @@ function recipe(){
           👨‍👩‍👧 いっしょに作った
         </button>
 
-        <button class=ate onclick="mark('ate')">
-          😋 食べた
-        </button>
+        <button class=ate onclick="openPortionSelect()">
+  😋 食べた
+</button>
       </div>
 
       <p class=note>
@@ -1603,6 +1603,343 @@ function recipe(){
 </p>
     </div>
   `;
+}
+
+// ========================================
+// 食べた量の選択・確認
+// ========================================
+
+const PORTION_OPTIONS = [
+  { fraction: 1,    label: 'ぜんぶ食べた',   percent: 100 },
+  { fraction: 0.75, label: '4分の3食べた',   percent: 75 },
+  { fraction: 0.5,  label: 'はんぶん食べた', percent: 50 },
+  { fraction: 0.25, label: '4分の1食べた',   percent: 25 },
+  { fraction: 0,    label: '食べなかった',   percent: 0 }
+];
+
+let selectedPortion = null;
+let portionRecipe = null;
+let portionSubmitting = false;
+
+// 1人分の野菜重量を取得
+function getRecipeVegetableWeight(recipeId) {
+
+  const r = remoteById(recipeId);
+
+  if (!r) return null;
+
+  const raw = String(
+    r['野菜重量(g)'] ?? ''
+  ).trim();
+
+  if (raw === '') return null;
+
+  const weight = Number(raw);
+
+  if (!Number.isFinite(weight) || weight < 0) {
+    return null;
+  }
+
+  return weight;
+}
+
+// 食べた量の選択画面を開く
+function openPortionSelect() {
+
+  if (!recipeSel) return;
+
+  portionRecipe = { ...recipeSel };
+  selectedPortion = null;
+  portionSubmitting = false;
+
+  page = 'portionSelect';
+  render();
+}
+
+// 円形イラスト
+function portionCircle(percent) {
+
+  return `
+    <span
+      class="portionCircle"
+      style="
+        background:
+          conic-gradient(
+            #65b96f 0% ${percent}%,
+            #e8ece8 ${percent}% 100%
+          );
+      "
+      aria-hidden="true">
+    </span>
+  `;
+}
+
+// 食べた割合を選択
+function portionSelect() {
+
+  if (!portionRecipe) {
+    go('home');
+    return;
+  }
+
+  app.innerHTML = `
+    <button
+      class="back"
+      onclick="cancelPortion()">
+      ‹ レシピにもどる
+    </button>
+
+    ${head(
+      '食べた量を記録',
+      portionRecipe.name
+    )}
+
+    <div class="card">
+
+      <h2>どのくらい食べた？</h2>
+
+      <p class="note">
+        この料理を食べた量に
+        いちばん近いものを選んでね。
+      </p>
+
+      <div class="portionGrid">
+
+        ${PORTION_OPTIONS.map((option, index) => `
+          <button
+            type="button"
+            class="portionOption"
+            onclick="choosePortion(${index})">
+
+            ${portionCircle(option.percent)}
+
+            <span>${option.label}</span>
+
+          </button>
+        `).join('')}
+
+      </div>
+
+    </div>
+  `;
+}
+
+// 選択後、確認画面へ
+function choosePortion(index) {
+
+  const option = PORTION_OPTIONS[index];
+
+  if (!option) return;
+
+  selectedPortion = option;
+
+  page = 'portionConfirm';
+  render();
+}
+
+// 確認画面
+function portionConfirm() {
+
+  if (!portionRecipe || !selectedPortion) {
+    page = 'portionSelect';
+    render();
+    return;
+  }
+
+  const weight = getRecipeVegetableWeight(
+    portionRecipe.recipe_id
+  );
+
+  const estimated = weight === null
+    ? null
+    : Math.round(
+        weight * selectedPortion.fraction * 10
+      ) / 10;
+
+  app.innerHTML = `
+    <button
+      class="back"
+      onclick="backToPortionSelect()">
+      ‹ 選び直す
+    </button>
+
+    ${head(
+      '記録の確認',
+      'まだ登録されていません'
+    )}
+
+    <div class="card">
+
+      <h2>この内容で記録する？</h2>
+
+      <p>
+        <strong>料理</strong><br>
+        ${portionRecipe.name}
+      </p>
+
+      <div class="portionConfirmVisual">
+
+        ${portionCircle(selectedPortion.percent)}
+
+        <strong>
+          ${selectedPortion.label}
+        </strong>
+
+        <span>
+          ${selectedPortion.percent}％
+        </span>
+
+      </div>
+
+      <div class="lessonBox">
+
+        <strong>推定野菜摂取量</strong>
+
+        <p class="portionEstimated">
+
+          ${
+            estimated === null
+              ? '野菜重量のデータがありません'
+              : `約${estimated}g`
+          }
+
+        </p>
+
+        <p class="note">
+          レシピの1人分の野菜重量から
+          計算した目安です。
+        </p>
+
+      </div>
+
+      <button
+        type="button"
+        class="primary"
+        id="portionRegisterButton"
+        onclick="registerPortion()">
+
+        この内容で登録する
+
+      </button>
+
+      <button
+        type="button"
+        class="secondary"
+        onclick="backToPortionSelect()">
+
+        戻って選び直す
+
+      </button>
+
+      <p class="note">
+        「この内容で登録する」を押すと
+        記録が保存されます。
+      </p>
+
+    </div>
+  `;
+}
+
+// 選択画面に戻る
+function backToPortionSelect() {
+
+  selectedPortion = null;
+
+  page = 'portionSelect';
+  render();
+}
+
+// 記録せずレシピに戻る
+function cancelPortion() {
+
+  selectedPortion = null;
+  portionRecipe = null;
+
+  page = 'recipe';
+  render();
+}
+
+// 確認後に登録
+function registerPortion() {
+
+  if (
+    !portionRecipe ||
+    !selectedPortion ||
+    portionSubmitting
+  ) {
+    return;
+  }
+
+  const now = Date.now();
+
+  // 同一料理の摂取記録について
+  // 5秒以内の二重登録を防ぐ
+  const duplicate = events
+    .slice()
+    .reverse()
+    .find(e =>
+      ['ate', 'ate_zero'].includes(e.type) &&
+      eventRecipeId(e) === portionRecipe.recipe_id
+    );
+
+  if (
+    duplicate &&
+    now - duplicate.ts < 5000
+  ) {
+    alert('この記録は、いま登録したばかりです。');
+    return;
+  }
+
+  portionSubmitting = true;
+
+  const button = document.querySelector(
+    '#portionRegisterButton'
+  );
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = '登録しています…';
+  }
+
+  const weight = getRecipeVegetableWeight(
+    portionRecipe.recipe_id
+  );
+
+  const estimated = weight === null
+    ? null
+    : Math.round(
+        weight * selectedPortion.fraction * 10
+      ) / 10;
+
+  const fraction = selectedPortion.fraction;
+
+  // 0％は「食べた回数」に含めない
+  const eventType = fraction > 0
+    ? 'ate'
+    : 'ate_zero';
+
+  log(eventType, {
+
+    recipe_id: portionRecipe.recipe_id,
+    season_id: portionRecipe.season_id || 'AW',
+    veg: portionRecipe.veg,
+    recipe: portionRecipe.name,
+
+    portion_fraction: fraction,
+    portion_label: selectedPortion.label,
+
+    vegetable_weight_g: weight,
+    estimated_vegetable_intake_g: estimated
+
+  });
+
+  selectedPortion = null;
+  portionRecipe = null;
+
+  page = 'recipe';
+  render();
+
+  alert('食べた量を記録しました。');
 }
 function mark(t){
 
@@ -2868,18 +3205,22 @@ function navRender(){
 function render(){
 
   let f={
-    setup,
-    home,
-    recipe,
-    learn,
-    lesson,
-    quizChoice,
-    pooledQuiz,
-    quizResult,
-    record,
-    notice,
-    settings
-  }[page]||home;
+  setup,
+  home,
+  recipe,
+
+  portionSelect,
+  portionConfirm,
+
+  learn,
+  lesson,
+  quizChoice,
+  pooledQuiz,
+  quizResult,
+  record,
+  notice,
+  settings
+}[page]||home;
 
   f();
   navRender();
