@@ -187,3 +187,56 @@
   line-height: 1.6;
   color: #6c756d;
 }
+
+/* 調理のポイント：工程写真と説明文を横並びにする */
+
+.stepPhotoRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.stepPhotoRow .stepPhoto {
+  display: block;
+  width: 38%;
+  max-width: 180px;
+  max-height: 150px;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+
+.stepPhotoText {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.stepPhotoText p {
+  margin: 0 0 8px;
+}
+
+.stepPhotoText p:last-child {
+  margin-bottom: 0;
+}
+
+/* スマートフォンでも横並びを維持 */
+
+@media (max-width: 480px) {
+  .stepPhotoRow {
+    gap: 10px;
+  }
+
+  .stepPhotoRow .stepPhoto {
+    width: 40%;
+    max-width: 140px;
+    max-height: 120px;
+  }
+
+  .stepPhotoText {
+    font-size: 13px;
+  }
+}
