@@ -607,17 +607,6 @@ function recipeDetailHTML(name, explicitId=''){
       : ''
     }
 
-    ${nutritionItems.length
-  ? `
-    <h3>栄養情報（1人分）</h3>
-
-    <ul class="ingredientList nutritionList">
-      ${nutritionItems.join('')}
-    </ul>
-  `
-  : ''
-}
-
         ${(r['調理ポイント'] || r['工程写真ファイル名'] || r['工程写真URL'])
       ? `
         <div class="lessonBox">
@@ -648,6 +637,17 @@ function recipeDetailHTML(name, explicitId=''){
           }
 
         </div>
+      `
+      : ''
+    }
+
+    ${nutritionItems.length
+      ? `
+        <h3>栄養情報（1人分）</h3>
+
+        <ul class="ingredientList nutritionList">
+          ${nutritionItems.join('')}
+        </ul>
       `
       : ''
     }
