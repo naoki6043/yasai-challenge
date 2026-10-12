@@ -1561,16 +1561,11 @@ function recipe(){
   : ''
 }
 
-    <div class=card>
-      <div class=lessonBox>
-        <strong>今日のチャレンジ</strong>
-        <p>${g}</p>
-      </div>
-
+        <div class=card>
       ${recipeDetailHTML(
-  recipeSel.name,
-  recipeSel.recipe_id
-)}
+        recipeSel.name,
+        recipeSel.recipe_id
+      )}
     </div>
 
     <div class=card>
