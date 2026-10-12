@@ -1233,9 +1233,7 @@ else{
 
     `<div class=hero>
 
-      <b>${gradeText('homeQuestion')}</b>
-
-      <p>${gradeText('homeGuide')}</p>
+      <b>🥦 朝ごはんに、やさいをプラス！</b>
 
     </div>
 
