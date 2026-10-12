@@ -618,11 +618,35 @@ function recipeDetailHTML(name, explicitId=''){
   : ''
 }
 
-    ${r['調理ポイント']
+        ${(r['調理ポイント'] || r['工程写真ファイル名'] || r['工程写真URL'])
       ? `
         <div class="lessonBox">
           <strong>調理のポイント</strong>
-          <p>${r['調理ポイント']}</p>
+
+          ${r['調理ポイント']
+            ? `<p>${r['調理ポイント']}</p>`
+            : ''
+          }
+
+          ${(r['工程写真URL'] || r['工程写真ファイル名'])
+            ? `
+              <figure class="stepPhotoBox">
+                <img
+                  class="stepPhoto"
+                  src="${r['工程写真URL'] || 'images/' + r['工程写真ファイル名']}"
+                  alt="調理工程の写真"
+                  loading="lazy"
+                >
+
+                ${r['工程写真説明']
+                  ? `<figcaption>${r['工程写真説明']}</figcaption>`
+                  : ''
+                }
+              </figure>
+            `
+            : ''
+          }
+
         </div>
       `
       : ''
