@@ -1626,8 +1626,9 @@ function openRecipeHome(vegName,i){
   recipe:recipeSel.name
 });
 
-  page='recipe';
+    page='recipe';
   render();
+  window.scrollTo(0, 0);
 }
 
 
