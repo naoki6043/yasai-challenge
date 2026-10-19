@@ -1629,6 +1629,85 @@ function openRecipeHome(vegName,i){
   page='recipe';
   render();
 }
+
+
+function recipeEnergyNav(){
+
+  if(!vegSel || !recipeSel) return '';
+
+  const names = vegSel[2];
+
+  return `
+    <section class="energyNav">
+      <div class="energyNavTitle">
+        3つの料理のエネルギー量
+        <small>1人分・少ない順</small>
+      </div>
+
+      <div class="energyNavBar">
+        ${names.map((name, i) => {
+
+          const id = recipeIds[name] || '';
+          const r = remoteById(id);
+          const value = String(
+            r?.['エネルギー(kcal)'] ?? ''
+          ).trim();
+
+          const active = id === recipeSel.recipe_id;
+
+          return `
+            <button
+              type="button"
+              class="energyNavItem ${active ? 'selected' : ''}"
+              onclick="selectRecipeFromNav(${i})"
+              aria-pressed="${active}"
+              aria-label="${value ? value + 'キロカロリー' : 'エネルギー未登録'}の料理を表示"
+            >
+              <strong>${value || '—'}</strong>
+              <span>kcal</span>
+            </button>
+          `;
+
+        }).join('')}
+      </div>
+
+      <p class="energyNavNote">
+        数字をタップすると、別の料理を見ることができます。
+      </p>
+    </section>
+  `;
+}
+
+function selectRecipeFromNav(index){
+
+  if(!vegSel || !vegSel[2][index]) return;
+
+  const name = vegSel[2][index];
+  const id = recipeIds[name] || '';
+
+  if(!id || id === recipeSel.recipe_id) return;
+
+  const remote = remoteById(id);
+
+  recipeSel = {
+    recipe_id: id,
+    season_id: remote?.['season_id'] || 'AW',
+    veg: remote?.['野菜名'] || vegSel[0],
+    name: remote?.['料理名'] || name
+  };
+
+  log('recipe_open',{
+    recipe_id: recipeSel.recipe_id,
+    season_id: recipeSel.season_id,
+    veg: recipeSel.veg,
+    recipe: recipeSel.name
+  });
+
+  render();
+  window.scrollTo(0,0);
+}
+
+
 function recipe(){
 
   const remote=
@@ -1648,10 +1727,12 @@ function recipe(){
     high:'調理の手順と安全を考えながら参加しよう。'
   }[profile.band];
 
-  app.innerHTML=`
+ app.innerHTML=`
     <button class=back onclick="go('home')">‹ ホームにもどる</button>
 
-   ${head(displayName,displayVeg)}
+    ${head(displayName,displayVeg)}
+
+    ${recipeEnergyNav()}
 
     ${recipePhoto(recipeSel.name, recipeSel.recipe_id)
   ? `
