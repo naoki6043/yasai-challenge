@@ -2306,7 +2306,7 @@ function lesson(){
       </div>
 
       <div class=lessonBox>
-        <strong>やってみよう</strong>
+        <strong>やさいの豆知識</strong>
         <p>${L.action||''}</p>
       </div>
 
