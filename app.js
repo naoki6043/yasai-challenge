@@ -370,7 +370,78 @@ function lessonBank(){
   return lessons[profile.band] || [];
 }
 function currentVegetables(){
-  return vegetables;
+
+  // 野菜の分類別・五十音順
+  const vegOrder = [
+    '小松菜',
+    '青梗菜',
+    '白菜',
+    'ほうれん草',
+    'カリフラワー',
+    'ブロッコリー',
+    'かぶ',
+    'ごぼう',
+    '大根',
+    '人参'
+  ];
+
+  // 公開データからレシピのエネルギー量を取得
+  function getEnergy(name){
+
+    const id = recipeIds[name] || '';
+    const recipe = remoteById(id);
+
+    if(!recipe){
+      return Infinity;
+    }
+
+    const value = String(
+      recipe['エネルギー(kcal)'] ?? ''
+    ).trim();
+
+    if(value === ''){
+      return Infinity;
+    }
+
+    const energy = Number(value);
+
+    return Number.isFinite(energy)
+      ? energy
+      : Infinity;
+  }
+
+  return vegetables
+    .map(v => {
+
+      // 元の配列を変更せず、レシピだけ並び替える
+      const sortedRecipes = [...v[2]].sort((a,b) => {
+
+        const energyA = getEnergy(a);
+        const energyB = getEnergy(b);
+
+        if(energyA !== energyB){
+          return energyA - energyB;
+        }
+
+        // 同じエネルギー量の場合はrecipe_id順
+        return (recipeIds[a] || '')
+          .localeCompare(recipeIds[b] || '');
+      });
+
+      return [v[0], v[1], sortedRecipes];
+
+    })
+    .sort((a,b) => {
+
+      const orderA = vegOrder.indexOf(a[0]);
+      const orderB = vegOrder.indexOf(b[0]);
+
+      return (
+        (orderA === -1 ? 999 : orderA) -
+        (orderB === -1 ? 999 : orderB)
+      );
+
+    });
 }
 function recipePhoto(name, explicitId=''){
 
