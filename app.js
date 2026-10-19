@@ -737,7 +737,7 @@ function recipeDetailHTML(name, explicitId=''){
     ${r['子どもへの一言']
       ? `
         <div class="lessonBox">
-          <strong>やってみよう</strong>
+          <strong>やさいの豆知識</strong>
           <p>${r['子どもへの一言']}</p>
         </div>
       `
