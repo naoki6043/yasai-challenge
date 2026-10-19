@@ -1773,8 +1773,8 @@ function recipe(){
     <button class=back onclick="go('home')">‹ ホームにもどる</button>
 
     ${head(displayName,displayVeg)}
-
-        ${recipeEnergyNav()}
+${remote?.['調理法'] ? `<p class="recipeCookingMethod">調理法：${remote['調理法']}</p>` : ''}
+${recipeEnergyNav()}
 
     <div id="recipeSwipeArea">
 
