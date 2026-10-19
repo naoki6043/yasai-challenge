@@ -328,3 +328,10 @@
 #recipeSwipeArea {
   touch-action: pan-y;
 }
+/* レシピ詳細画面：調理法 */
+.recipeCookingMethod {
+  font-size: 13px;
+  color: #666;
+  margin: 4px 0 10px;
+  line-height: 1.5;
+}
