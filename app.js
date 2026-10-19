@@ -1708,6 +1708,48 @@ function selectRecipeFromNav(index){
 }
 
 
+function setupRecipeSwipe(){
+
+  const area = document.querySelector('#recipeSwipeArea');
+  if(!area) return;
+
+  let startX = 0;
+  let startY = 0;
+
+  area.addEventListener('touchstart', e => {
+    if(e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, {passive:true});
+
+  area.addEventListener('touchend', e => {
+    if(e.changedTouches.length !== 1) return;
+
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+
+    // 縦スクロールや小さな指の動きでは切り替えない
+    if(Math.abs(dx) < 65) return;
+    if(Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+    if(!vegSel || !recipeSel) return;
+
+    const index = vegSel[2].findIndex(
+      name => recipeIds[name] === recipeSel.recipe_id
+    );
+
+    if(index < 0) return;
+
+    const nextIndex = dx < 0 ? index + 1 : index - 1;
+
+    if(nextIndex < 0 || nextIndex >= vegSel[2].length) return;
+
+    selectRecipeFromNav(nextIndex);
+
+  }, {passive:true});
+}
+
+
 function recipe(){
 
   const remote=
@@ -1732,7 +1774,9 @@ function recipe(){
 
     ${head(displayName,displayVeg)}
 
-    ${recipeEnergyNav()}
+        ${recipeEnergyNav()}
+
+    <div id="recipeSwipeArea">
 
     ${recipePhoto(recipeSel.name, recipeSel.recipe_id)
   ? `
@@ -1748,12 +1792,14 @@ function recipe(){
   : ''
 }
 
-        <div class=card>
+            <div class=card>
       ${recipeDetailHTML(
         recipeSel.name,
         recipeSel.recipe_id
       )}
     </div>
+
+    </div><!-- recipeSwipeArea 終了 -->
 
     <div class=card>
       <h3>やったことを記録</h3>
@@ -3421,27 +3467,34 @@ function navRender(){
   ).join('');
 }
 
+
 function render(){
 
   let f={
-  setup,
-  home,
-  recipe,
+    setup,
+    home,
+    recipe,
 
-  portionSelect,
-  portionConfirm,
+    portionSelect,
+    portionConfirm,
 
-  learn,
-  lesson,
-  quizChoice,
-  pooledQuiz,
-  quizResult,
-  record,
-  notice,
-  settings
-}[page]||home;
+    learn,
+    lesson,
+    quizChoice,
+    pooledQuiz,
+    quizResult,
+    record,
+    notice,
+    settings
+  }[page]||home;
 
   f();
+
+  // レシピ詳細画面で左右スワイプを有効にする
+  if(page==='recipe'){
+    setupRecipeSwipe();
+  }
+
   navRender();
 }
 
