@@ -324,3 +324,7 @@
   font-size: 11px;
   line-height: 1.6;
 }
+/* レシピ詳細画面：左右スワイプ */
+#recipeSwipeArea {
+  touch-action: pan-y;
+}
