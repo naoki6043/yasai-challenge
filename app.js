@@ -682,16 +682,19 @@ function recipeDetailHTML(name, explicitId=''){
   : ''
 }
 
-<div class="recipeAllergy">
-  <strong>アレルギー情報：</strong>
-  ${String(r['アレルギー注意'] || '').trim()
-    ? escapeHtml(String(r['アレルギー注意']).trim())
-    : '確認中'}
-  <p>
-    使用する調味料・加工食品の原材料表示も
-    必ず確認してください。
-  </p>
-</div>
+${String(r['アレルギー注意'] || '').trim()
+  ? `
+    <div class="recipeAllergy">
+      <strong>アレルギー情報：</strong>
+      ${escapeHtml(String(r['アレルギー注意']).trim())}
+      <p>
+        使用する調味料・加工食品の原材料表示も
+        必ず確認してください。
+      </p>
+    </div>
+  `
+  : ''
+}
 
     ${steps.length
       ? `
