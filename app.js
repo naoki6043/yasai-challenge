@@ -283,6 +283,21 @@ function loadPublishedRecipes(){
 
 }
 
+// ========================================
+// HTML表示用：特殊文字の変換
+// ========================================
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c]));
+}
+
+// 既存コード（ここから下は変更しない）
 function remoteByName(name){return remoteRecipes.find(r=>r['料理名']===name)}
 function remoteById(id){
   return remoteRecipes.find(
@@ -657,15 +672,26 @@ function recipeDetailHTML(name, explicitId=''){
     }
 
     ${mats.length
-      ? `
-        <h3>材料${servingsText}</h3>
+  ? `
+      <h3>材料${servingsText}</h3>
 
-        <ul class="ingredientList">
-          ${mats.join('')}
-        </ul>
-      `
-      : ''
-    }
+      <ul class="ingredientList">
+        ${mats.join('')}
+      </ul>
+    `
+  : ''
+}
+
+<div class="recipeAllergy">
+  <strong>アレルギー情報：</strong>
+  ${String(r['アレルギー注意'] || '').trim()
+    ? escapeHtml(String(r['アレルギー注意']).trim())
+    : '確認中'}
+  <p>
+    使用する調味料・加工食品の原材料表示も
+    必ず確認してください。
+  </p>
+</div>
 
     ${steps.length
       ? `
